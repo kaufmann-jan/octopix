@@ -10,33 +10,25 @@ from pathlib import Path
 
 from datetime import datetime
 
-sys.path.insert(0, "/home/kaufmann/workspace/MOFA/python")
-#print(str(sys.path))
-from dataProcessing.fileIO import forces, residuals
+from fileOps import OFppScanner,are_equal
+
+
 import matplotlib
 matplotlib.use('Qt5Agg')
 
-#from PyQt5 import QtWidgets
-#from PyQt5.QtCore import Qt
-from PyQt5 import QtCore
+
 from PyQt5.QtGui import QPalette, QColor,QDoubleValidator,QIcon
-
 from PyQt5.QtWidgets import QVBoxLayout,QHBoxLayout,QFormLayout,QGridLayout,QAction,qApp
-
-
 from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox,\
-    QDateEdit,QDateTimeEdit,QDial,QDoubleSpinBox,QLCDNumber,QLabel,QLineEdit,QProgressBar,\
-    QPushButton,QRadioButton,QSlider,QSpinBox,QTimeEdit,QPlainTextEdit,QTabWidget,QListWidget
-    
-from PyQt5.QtCore import pyqtSlot
+    QLabel,QLineEdit,QPushButton,QPlainTextEdit,QTabWidget,QListWidget
+from PyQt5.QtCore import pyqtSlot,QTimer,Qt
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg,NavigationToolbar2QT as NavigationToolbar
-from matplotlib.figure import Figure
+from canvas import MplCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
-import numpy as np
 import pandas as pd
 
-from fileOps import findAllOFppObjects,are_equal
+
 
 if False:
     pd.set_option('display.float_format', lambda x: '%.3f' % x)
@@ -55,136 +47,7 @@ class Color(QWidget):
         self.setPalette(palette)
 
 
-class MplCanvas(FigureCanvasQTAgg):
 
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
-        self.fig = Figure(figsize=(width, height), dpi=dpi, tight_layout=True)
-        self.axes = self.fig.add_subplot(111)
-        super(MplCanvas, self).__init__(self.fig)
-       
-        self.data = pd.DataFrame()
-        self._plot_refs = None
-        self.stylecounter = 0
-        self.current_data_type = None
-       
-    def load_data(self,data_type,time_start=0.0):
-        """Reads the OpenFOAM postprocessing time-series data 
-        from disk and converts it to an pandas data frame.
-        """
-        try:
-            if data_type == 'residuals':
-                self.df = residuals()
-            elif data_type == 'forces':
-                self.df = forces()
-            else:
-                self.df = pd.DataFrame(data={'time':[]})
-            
-            if time_start > 0.0:
-                self.df = self.df.loc[self.df.time >= time_start]
-            
-            self.df.set_index('time',drop=True,inplace=True)
-            
-        except IndexError as e:
-            self.df = pd.DataFrame()
-
-                
-    def _setPlotStyle(self,style='dark'):
-        
-        if style is None:
-            self.axes.grid(True,linestyle='-',color='black')
-            fig_facecolor = 'white'
-            axes_facecolor = 'white'
-            text_color = 'black'
-
-            self.fig.set_facecolor(fig_facecolor)
-            self.axes.set_facecolor(axes_facecolor)
-            self.axes.xaxis.label.set_color(text_color)
-            self.axes.yaxis.label.set_color(text_color)
-            self.axes.tick_params(colors=text_color)
-
-            for spine in ['left','right','top','bottom']:
-                self.axes.spines[spine].set_visible(True) 
-                           
-        else:
-            if style == 'bright':
-                fig_facecolor = np.array([204.,213,230])/255.
-                axes_facecolor = np.array([173.,182,199])/255.
-                text_color = 'black'
-                grid_color = 'white'
-            elif style == 'dark':
-                fig_facecolor = np.array([72,77,73])/255.
-                axes_facecolor = np.array([83,89,85])/255.
-                grid_color = 'lightgray'
-                text_color = 'white'
-
-            self.fig.set_facecolor(fig_facecolor)
-            self.axes.grid(True,linestyle=':',color=grid_color)
-            self.axes.set_facecolor(axes_facecolor)
-            self.axes.xaxis.label.set_color(text_color)
-            self.axes.yaxis.label.set_color(text_color)
-            self.axes.tick_params(colors=text_color)
-
-            for spine in ['left','right','top','bottom']:
-                self.axes.spines[spine].set_visible(False)
-    
- 
-    def update_plot(self,data_type,time_start=0.0,data_subset=[]):
-        """(Re)Loads the data with self.load_data() and 
-        draws the plot. If called for the first time, the 
-        axis is created, otherwise the reference to the axis
-        is updated (not yet implemented, for now we just clear the
-        axis and redraw...
-        """
-        self.load_data(data_type,time_start)
-        
-        if self.df.empty:
-            self.axes.cla()
-            textstr = 'No Data available'
-            props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-            self.axes.text(0.35, 0.6, textstr, transform=self.axes.transAxes, fontsize=10,verticalalignment='top', bbox=props)
-            self._plot_refs = None
-        else:
-            
-            if len(data_subset) > 0:
-                self.df =  self.df[self.df.columns.intersection(data_subset)]
-    
-            if self._plot_refs is None or self.current_data_type != data_type:
-                
-                self.current_data_type = data_type
-                self.axes.cla()
-                                
-                plot_refs = [ self.axes.plot(self.df.index,self.df[col],label=col)[0] for col in list(self.df)]
-                
-                if data_type == 'residuals':
-                    self.axes.set_ylabel('Residuals [-]')    
-                    self.axes.set_yscale('log')
-                elif data_type == 'forces':
-                    self.axes.set_ylabel('Forces')
-                
-                self.axes.set_xlabel('Time')   
-    
-                legend = self.axes.legend(framealpha=0.2)
-                legend.set_draggable(True)
-    
-                self._plot_refs = plot_refs
-                
-            else:
-               
-                for i,col in enumerate(list(self.df)):
-                    self._plot_refs[i].set_data(self.df.index,self.df[col])
-    
-                self.axes.relim()
-                self.axes.autoscale_view()
-
-        self._setPlotStyle()
-        self.draw()
-        
-        try:
-            des = self.df.describe().T.loc[:,['mean','min','max','std']]
-        except:
-            des = pd.DataFrame()
-        
-        return des.T
 
 
 class Octopix(QMainWindow):
@@ -215,9 +78,8 @@ class Octopix(QMainWindow):
         # slider??, or value box
         # defaults to 0.0
         
-        self.ppObjects = findAllOFppObjects(supported_types=supported_post_types, working_dir=Path.cwd())
+        self.OFscanner = OFppScanner(supported_types=supported_post_types, working_dir=Path.cwd())
         
-        self.data_types = list(self.ppObjects.keys())
         self.data_type = None
         self.data_subset = []
         self.eval_time_start = 0.0
@@ -324,42 +186,30 @@ class Octopix(QMainWindow):
         self.show()
         
         # Setup a timer to trigger the redraw by calling update_plot.
-        self.timer = QtCore.QTimer()
+        self.timer = QTimer()
         self.timer.setInterval(1000)
         #self.timer.timeout.connect(lambda: self.sc.update_plot(self.data_type,self.eval_time_start))
         self.timer.timeout.connect(self.update_plot)
         # start the timer on start-up        
-        self.clickBox(QtCore.Qt.Checked)
+        self.clickBox(Qt.Checked)
 
         self.statusBar().showMessage('Ready')
     
 
     def update_plot(self):
         
-        self.ppObjects = findAllOFppObjects(supported_types=supported_post_types)
+        self.OFscanner.scan()
         
-        currentFoundItems = list(self.ppObjects.keys())
+        currentFoundItems = self.OFscanner.post_types
         currentLoadedItems = [self.cb.itemText(i) for i in range(self.cb.count())]
         
         if not are_equal(currentFoundItems,currentLoadedItems):
+            self.sc.clear()
             self.cb.clear()
-            self.cb.addItems(list(self.ppObjects.keys()))
+            self.cb.addItems(self.OFscanner.post_types)
 
-            self.data_types = list(self.ppObjects.keys())
+        if len(self.OFscanner.post_types) == 0:
             self.listwidget.clear()
-            try:
-                self.data_type = self.data_types[0]
-                self.listwidget.addItems(self.ppObjects[self.data_type])
-            except IndexError:
-                pass   
-
-        # # set focus on first element if not yet initialized # check!!!!!
-        # if self.data_type is None and len(self.data_types) > 0:
-        #
-            # self.data_type = self.data_types[0]
-            # self.listwidget.clear()
-            # self.listwidget.addItems(self.ppObjects[self.data_type])       
-        
              
         stats = self.sc.update_plot(self.data_type,self.eval_time_start,self.data_subset)
         self.statistics_text_field.setPlainText(str(stats))
@@ -374,7 +224,7 @@ class Octopix(QMainWindow):
     def clickBox(self, state):
         """Auto update checkbox
         """
-        if state == QtCore.Qt.Checked:
+        if state == Qt.Checked:
             self._output('Autoupdate on')
             self.timer.start()
         else:
@@ -399,10 +249,8 @@ class Octopix(QMainWindow):
             
     def selectionChanged(self,i):
         
-        self.ppObjects = findAllOFppObjects(supported_types=supported_post_types)
-        
         try:
-            self.data_type = list(self.ppObjects.keys())[i]
+            self.data_type = self.OFscanner.post_types[i]
             
             if self.data_type == 'forces':
                 self.data_subset = ['fx','fxv']
@@ -410,12 +258,12 @@ class Octopix(QMainWindow):
                 self.data_subset = []
             
             self.listwidget.clear()
-            self.listwidget.addItems(self.ppObjects[self.data_type])
+            self.listwidget.addItems(self.OFscanner.ppObjects[self.data_type])
             
             self.update_plot()
             
-        except IndexError as e:
-            print(e)
+        except IndexError:
+            self.sc.clear()
 
 def main():
     

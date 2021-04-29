@@ -1,5 +1,5 @@
-#! /usr/bin/env python3
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-*-
 
 from pathlib import Path
 
@@ -43,16 +43,7 @@ def listDiff(l1,l2):
 def are_equal(l1,l2):
     return (set(l1) == set(l2))
 
-def findAllOFPostProcObjects(working_dir=Path.cwd()):
-    
-    ppObjects = {}
-    for key in get_pdirs(working_dir=working_dir):
-        dat_files = get_ddirs(get_tdirs(key))
-        if is_unique(dat_files):
-            ppObjects[key] = Path(dat_files[0]).stem
-        
-    return ppObjects    
-    
+   
 
 def findAllOFppObjects(supported_types,working_dir=Path.cwd()):
     
@@ -71,6 +62,21 @@ def findAllOFppObjects(supported_types,working_dir=Path.cwd()):
     ppObjects = {k:sorted(v,key=lambda x: x.replace('_','{')) for (k,v) in ppObjects.items()}
         
     return ppObjects
+
+class OFppScanner(object):
+    
+    def __init__(self,supported_types,working_dir=Path.cwd()):
+        
+        self.supported_types = supported_types
+        self.working_dir = working_dir
+        
+        self.scan()
+    
+    def scan(self):
+        
+        self.ppObjects = findAllOFppObjects(self.supported_types, self.working_dir)
+        self.post_types = list(self.ppObjects.keys())
+
 
 
 def main():
