@@ -10,18 +10,19 @@ from pathlib import Path
 
 from datetime import datetime
 
-sys.path.insert(0, "/home/jan/workspace/MOFA/python")
+sys.path.insert(0, "/home/kaufmann/workspace/MOFA/python")
 #print(str(sys.path))
 from dataProcessing.fileIO import forces, residuals
 import matplotlib
 matplotlib.use('Qt5Agg')
 
 #from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt
+#from PyQt5.QtCore import Qt
 from PyQt5 import QtCore
-from PyQt5.QtGui import QPalette, QColor,QDoubleValidator
+from PyQt5.QtGui import QPalette, QColor,QDoubleValidator,QIcon
 
-from PyQt5.QtWidgets import QVBoxLayout,QHBoxLayout,QFormLayout,QGridLayout
+from PyQt5.QtWidgets import QVBoxLayout,QHBoxLayout,QFormLayout,QGridLayout,QAction,qApp
+
 
 from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox,\
     QDateEdit,QDateTimeEdit,QDial,QDoubleSpinBox,QLCDNumber,QLabel,QLineEdit,QProgressBar,\
@@ -35,7 +36,7 @@ from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
 
-from fileOps import findAllOFPostProcObjects,listDiff,findAllOFppObjects,are_equal
+from fileOps import findAllOFppObjects,are_equal
 
 if False:
     pd.set_option('display.float_format', lambda x: '%.3f' % x)
@@ -162,7 +163,7 @@ class MplCanvas(FigureCanvasQTAgg):
                 
                 self.axes.set_xlabel('Time')   
     
-                legend = self.axes.legend()
+                legend = self.axes.legend(framealpha=0.2)
                 legend.set_draggable(True)
     
                 self._plot_refs = plot_refs
@@ -192,7 +193,19 @@ class Octopix(QMainWindow):
         super(Octopix, self).__init__(*args, **kwargs)
 
         self.setWindowTitle("Octopix - Visualize your Simulation Progress")
-        self.statusBar().showMessage('Ready')
+        
+        exitAct = QAction(QIcon('exit.png'), '&Exit', self)
+        exitAct.setShortcut('Ctrl+Q')
+        exitAct.setStatusTip('Exit application')
+        exitAct.triggered.connect(qApp.quit)
+        
+        self.statusBar()
+                
+        menubar = self.menuBar()
+        fileMenu = menubar.addMenu('&File')
+        fileMenu.addAction(exitAct)
+        
+        self.setGeometry(300, 300, 1100, 900)
         
         # --------------
         # user input and defaults
@@ -225,8 +238,7 @@ class Octopix(QMainWindow):
         #cb.addItem('residuals')
         #cb.addItems(self.data_types)
         self.cb.currentIndexChanged.connect(self.selectionChanged)
-        
-            
+                   
 
         flo = QFormLayout()
         flo.addRow("Eval start time", e1)
@@ -333,12 +345,20 @@ class Octopix(QMainWindow):
             self.cb.clear()
             self.cb.addItems(list(self.ppObjects.keys()))
 
-        # set focus on first element if not yet initialized # check!!!!!
-        if self.data_type is None and len(self.data_types) > 0:
-            self.data_type = self.data_types[0]
-
+            self.data_types = list(self.ppObjects.keys())
             self.listwidget.clear()
-            self.listwidget.addItems(self.ppObjects[self.data_type])       
+            try:
+                self.data_type = self.data_types[0]
+                self.listwidget.addItems(self.ppObjects[self.data_type])
+            except IndexError:
+                pass   
+
+        # # set focus on first element if not yet initialized # check!!!!!
+        # if self.data_type is None and len(self.data_types) > 0:
+        #
+            # self.data_type = self.data_types[0]
+            # self.listwidget.clear()
+            # self.listwidget.addItems(self.ppObjects[self.data_type])       
         
              
         stats = self.sc.update_plot(self.data_type,self.eval_time_start,self.data_subset)
