@@ -1,21 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+
 import sys
-import os
-
-import configparser
-
 from pathlib import Path
-
 from datetime import datetime
 
+from canvas import canvasLayout
 from fileOps import OFppScanner,are_equal
-
 
 import matplotlib
 matplotlib.use('Qt5Agg')
-
 
 from PyQt5.QtGui import QPalette, QColor,QDoubleValidator,QIcon
 from PyQt5.QtWidgets import QVBoxLayout,QHBoxLayout,QFormLayout,QGridLayout,QAction,qApp
@@ -23,18 +18,8 @@ from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox
     QLabel,QLineEdit,QPushButton,QPlainTextEdit,QTabWidget,QListWidget
 from PyQt5.QtCore import pyqtSlot,QTimer,Qt
 
-from canvas import MplCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-
-import pandas as pd
-
-
-
-if False:
-    pd.set_option('display.float_format', lambda x: '%.3f' % x)
 
 supported_post_types = ['residuals','forces','rigidBodyState','time','fieldMinMax']
-
 
 class Color(QWidget):
 
@@ -47,26 +32,42 @@ class Color(QWidget):
         self.setPalette(palette)
 
 
-
-
-
 class Octopix(QMainWindow):
+
+    def printMoep(self):
+        print('mööööp')
+
+    def initMenubar(self):
+        
+        exitAct = QAction(QIcon('exit.png'), '&Exit', self)
+        exitAct.setShortcut('Ctrl+Q')
+        exitAct.setStatusTip('Exit application')
+        exitAct.triggered.connect(qApp.quit)
+                
+        menubar = self.menuBar()
+        
+        fileMenu = menubar.addMenu('&File')
+        fileMenu.addAction(exitAct)
+        
+        setStyle = QAction('möp', self)
+        setStyle.setShortcut('Ctrl+M')
+        setStyle.setStatusTip('print möööp to the console')
+        #setStyle.triggered.connect(self.printMoep)
+        setStyle.triggered.connect(lambda: print('mööööööööööp'))
+        
+        appearanceMenu = menubar.addMenu('&Appearance')
+        appearanceMenu.addAction(setStyle)
+        
+        
 
     def __init__(self, *args, **kwargs):
         super(Octopix, self).__init__(*args, **kwargs)
 
         self.setWindowTitle("Octopix - Visualize your Simulation Progress")
         
-        exitAct = QAction(QIcon('exit.png'), '&Exit', self)
-        exitAct.setShortcut('Ctrl+Q')
-        exitAct.setStatusTip('Exit application')
-        exitAct.triggered.connect(qApp.quit)
-        
+        self.initMenubar()
+
         self.statusBar()
-                
-        menubar = self.menuBar()
-        fileMenu = menubar.addMenu('&File')
-        fileMenu.addAction(exitAct)
         
         self.setGeometry(300, 300, 1100, 900)
         
@@ -85,9 +86,6 @@ class Octopix(QMainWindow):
         self.eval_time_start = 0.0
         #---------------------------
         
-        self.sc = MplCanvas(self, width=7, height=4, dpi=100)
-        toolbar = NavigationToolbar(self.sc, self)
-        
         settings_layout = QVBoxLayout()
         
         e1 = QLineEdit()
@@ -100,7 +98,6 @@ class Octopix(QMainWindow):
         #cb.addItem('residuals')
         #cb.addItems(self.data_types)
         self.cb.currentIndexChanged.connect(self.selectionChanged)
-                   
 
         flo = QFormLayout()
         flo.addRow("Eval start time", e1)
@@ -160,21 +157,16 @@ class Octopix(QMainWindow):
         
         settings_layout.addLayout(hbox)    
                    
-        canvas_layout = QVBoxLayout()
-        canvas_layout.addWidget(toolbar)
-        canvas_layout.addWidget(self.sc)
-        #canvas_layout.addWidget(self.tabs)
-        
-        #outer_layout = QHBoxLayout()
-        #outer_layout.addLayout(settings_layout)
-        #outer_layout.addLayout(canvas_layout)
+        self.canvas_layout = canvasLayout()
 
         outer_layout = QGridLayout()
         outer_layout.addLayout(settings_layout,0,0,3,1)
-        outer_layout.addLayout(canvas_layout,0,2)
+        outer_layout.addLayout(self.canvas_layout,0,2)
         outer_layout.addWidget(self.tabs,2,2)
         outer_layout.setColumnStretch(0,0)
         outer_layout.setColumnStretch(2,2)
+        outer_layout.setRowStretch(0,2)
+        outer_layout.setRowStretch(2,1)
 
         widget = QWidget()
         widget.setLayout(outer_layout)
@@ -204,14 +196,14 @@ class Octopix(QMainWindow):
         currentLoadedItems = [self.cb.itemText(i) for i in range(self.cb.count())]
         
         if not are_equal(currentFoundItems,currentLoadedItems):
-            self.sc.clear()
+            self.canvas_layout.mplCanvas.clear()
             self.cb.clear()
             self.cb.addItems(self.OFscanner.post_types)
 
         if len(self.OFscanner.post_types) == 0:
             self.listwidget.clear()
              
-        stats = self.sc.update_plot(self.data_type,self.eval_time_start,self.data_subset)
+        stats = self.canvas_layout.mplCanvas.update_plot(self.data_type,self.eval_time_start,self.data_subset)
         self.statistics_text_field.setPlainText(str(stats))
 
     def _output(self,text):
@@ -263,12 +255,12 @@ class Octopix(QMainWindow):
             self.update_plot()
             
         except IndexError:
-            self.sc.clear()
+            self.canvas_layout.mplCanvas.clear()
 
 def main():
     
     app = QApplication(sys.argv)
-    w = Octopix()  
+    w = Octopix()
     app.exec_()
 
 

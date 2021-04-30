@@ -3,12 +3,24 @@
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg,NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
-import matplotlib
 
 import numpy as np
 import pandas as pd
 
 from fileIO import forces,residuals,time
+from PyQt5.QtWidgets import QVBoxLayout
+
+
+class canvasLayout(QVBoxLayout):
+
+    def __init__(self, *args, **kwargs):
+        super(canvasLayout,self).__init__(*args, **kwargs)
+        
+        self.mplCanvas = MplCanvas()
+        self.toolbar = NavigationToolbar(self.mplCanvas,None)
+        
+        self.addWidget(self.toolbar)
+        self.addWidget(self.mplCanvas)
 
 
 class MplCanvas(FigureCanvasQTAgg):
@@ -24,7 +36,8 @@ class MplCanvas(FigureCanvasQTAgg):
         self.current_data_type = None
        
     def load_data(self,data_type,time_start=0.0):
-        """Reads the OpenFOAM postprocessing time-series data 
+        """Reads the OpenFOAM postprocessing time-series data     def printMoep(self):
+        print('mööööp')
         from disk and converts it to an pandas data frame.
         """
         try:
