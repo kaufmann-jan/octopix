@@ -3,11 +3,6 @@
 
 from pathlib import Path
 
-import sys
-sys.path.insert(0, "/home/jan/workspace/MOFA/python")
-from dataProcessing import fileIO 
-
-
 def flatten(l):
     
     return [item for sublist in l for item in sublist]
