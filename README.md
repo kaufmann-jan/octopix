@@ -6,20 +6,39 @@ octopix is a small, lightweight GUI for showing / plotting (mainly) OpenFOAM tim
 tbd. 
 
 ```bash
-git clone 
+git clone ....
 ```
 
 ## Usage
 
-tbd. 
-
-```python
-import octopix
+In order to run with
+ 
+```bash
+python -m octopix
 ```
+
+we need to add octopix to the PYTHONPATH. One possibility is to add to the site-packages of the virtualenv.
+For this we need to create a .pth file within the virtualenv's lib dir: 
+
+`path/to/virtualenv/lib/python3.8/site-packages/`
+
+e.g.
+
+`/home/jan/virtualenvs/gui/lib/python3.8/site-packages/octopix.pth`
+
+with the absolute path to the octopix package
+
+`/path/to/octopix`
+
+e.g.
+
+`/home/jan/workspace/octopix`
+
+
 
 ## Contribution
 
-Contributions are welcome! This is a private project. Therefore time is the most limiting resource... 
+Contributions are welcome! This is a private project. Therefore time is the most limiting resource... :children_crossing:
 
 ## License
 

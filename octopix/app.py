@@ -6,8 +6,8 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-from canvas import canvasLayout
-from fileOps import OFppScanner,are_equal
+from octopix.show.canvas import canvasLayout
+from octopix.data.fileOps import OFppScanner,are_equal
 
 import matplotlib
 matplotlib.use('Qt5Agg')
@@ -301,19 +301,16 @@ class Octopix(QMainWindow):
         self.update_plot()
         
         
-        
 
-def main():
-    
+def run():
     
     app = QApplication(sys.argv)
     octopix = Octopix(show_gui=True)
     app.exec_()
 
 
-
 if __name__ == '__main__':
-    main()
+    run()
 
 
 

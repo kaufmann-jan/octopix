@@ -4,11 +4,12 @@
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg,NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 
+from PyQt5.QtWidgets import QVBoxLayout
+
 import numpy as np
 import pandas as pd
 
-from fileIO import OpenFOAMresiduals,OpenFOAMForces,OpenFOAMtime
-from PyQt5.QtWidgets import QVBoxLayout
+from octopix.data.fileIO import OpenFOAMresiduals,OpenFOAMForces,OpenFOAMtime
 
 
 class canvasLayout(QVBoxLayout):
