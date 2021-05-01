@@ -1,0 +1,9 @@
+*.swp
+*.tmp
+*.bak
+.project
+.pydevproject
+.settings/
+
+
+
