@@ -9,8 +9,7 @@ from PyQt5.QtWidgets import QVBoxLayout
 import numpy as np
 import pandas as pd
 
-from octopix.data.fileIO import OpenFOAMresiduals,OpenFOAMForces,OpenFOAMtime
-
+from octopix.data.fileOps import are_equal
 
 class canvasLayout(QVBoxLayout):
 
@@ -35,39 +34,7 @@ class MplCanvas(FigureCanvasQTAgg):
         self._plot_refs = None
         self.current_data_type = None
         self.current_data_file = None
-        self.current_data_subset = None
-       
-    def load_data(self,data_type,data_file,time_start=0.0):
-        """Reads the OpenFOAM postprocessing time-series data
-        from disk and converts it to an pandas data frame.
-        """
-        try:
-            if data_type == 'residuals':
-                ofpp = OpenFOAMresiduals(base_dir=data_file)
-            elif data_type == 'forces':
-                ofpp = OpenFOAMForces(base_dir=data_file)
-            elif data_type == 'time':
-                ofpp = OpenFOAMtime(base_dir=data_file)
-            else:
-                ofpp = None
-                
-            if ofpp is None:
-                self.df = pd.DataFrame(data={'time':[]})
-            else:
-                self.df = ofpp.data
-                
-            self.fields = list(self.df.columns)
-            self.fields.remove('time')
-            
-            if time_start > 0.0:
-                self.df = self.df.loc[self.df.time >= time_start]
-            
-            self.df.set_index('time',drop=True,inplace=True)
-            
-        except:
-            self.df = pd.DataFrame()
-        
-
+        self.fields = None
                 
     def _setPlotStyle(self,style='dark'):
         
@@ -121,27 +88,23 @@ class MplCanvas(FigureCanvasQTAgg):
         self._plot_refs = None
  
  
-    def update_plot(self,data_type,data_file,time_start=0.0,data_subset=[]):
+    def update_plot(self,data,data_type,data_file):
         """(Re)Loads the data with self.load_data() and 
         draws the plot. If called for the first time, the 
         axis is created, otherwise the reference to the axis
         is updated.
         """
-        self.load_data(data_type,data_file,time_start)
+        self.df = data
         
         if self.df.empty:
             self.clear()
         else:
-            
-            if len(data_subset) > 0:
-                self.df =  self.df[self.df.columns.intersection(data_subset)]
-                if self.df.empty:
-                    return
-    
-            if self._plot_refs is None or self.current_data_type != data_type or self.current_data_subset != data_subset:
+            if self._plot_refs is None or self.current_data_type != data_type or not are_equal(self.fields,self.df.columns):
                 
                 self.current_data_type = data_type
                 self.current_data_file = data_file
+                self.fields = self.df.columns
+                
                 self.axes.cla()
                                 
                 plot_refs = [ self.axes.plot(self.df.index,self.df[col],label=col)[0] for col in list(self.df)]
@@ -149,9 +112,12 @@ class MplCanvas(FigureCanvasQTAgg):
                 if data_type == 'residuals':
                     self.axes.set_ylabel('Residuals [-]')    
                     self.axes.set_yscale('log')
-
                 elif data_type == 'forces':
-                    self.axes.set_ylabel('Forces')
+                    self.axes.set_ylabel('Forces [N]')
+                elif data_type == 'time':
+                    self.axes.set_ylabel('Time [s]')
+                else:
+                    self.axes.set_ylabel('Data []')
                 
                 self.axes.set_xlabel('Time')   
 
@@ -170,11 +136,7 @@ class MplCanvas(FigureCanvasQTAgg):
 
         self._setPlotStyle()
         self.draw()
-        
-        try:
-            self.des = self.df.describe().T.loc[:,['mean','min','max','std']]
-        except:
-            self.des = pd.DataFrame()
+
             
     def savePlot(self):
         

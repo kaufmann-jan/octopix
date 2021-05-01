@@ -2,9 +2,42 @@
 # -*- coding: utf-8 -*-
 
 import pandas as pd
+import numpy as np
 from io import StringIO
 import os
 from pathlib import Path
+import sys
+
+
+def makeRuntimeSelectableReader(reader_name,file_name):
+    
+    reader_name = "OpenFOAM{0:}".format(reader_name)
+    try:
+        reader = getattr(sys.modules[__name__],reader_name)(base_dir=file_name)
+    except AttributeError as e:
+        if str(e).find("octopix.data.fileIO"):
+            if not str(e).find('None'):
+                print('unknown reader',reader_name)    
+        else:
+            print(e)
+            
+        reader = OpenFOAMpostProcessing(base_dir=None, file_name=None, names=None, usecols=None)        
+    
+    return reader
+
+
+def prepare_data(df,time_start=0.0,data_subset=[]):
+            
+    if time_start > 0.0:
+        df = df.loc[df.time >= time_start]
+            
+    df.set_index('time',drop=True,inplace=True)
+
+    if len(data_subset) > 0:
+        df = df[df.columns.intersection(data_subset)]
+            
+    return df
+
 
 def readOF(file_name):
     """Opens a text file, replaces all brackets with 
@@ -42,12 +75,10 @@ def combineOFtimeFiles(base_dir,file_name,names,time_dirs=None,usecols=None):
             d = d.combine_first(i)
     
     return d
-    
-# def listTimeDirs(path_to_time_dirs):
-#     return sorted(os.listdir(path_to_time_dirs),key=float,reverse=False)
 
 def listTimeDirs(path_to_time_dirs):
-    pattern = ['[0-9]*', '0.[0-9]*']
+    ## TODO: check the pattern. the list seems unnecessary, [0-9]' should cover all
+    pattern = ['[0-9]*', '0.[0-9]*']  
     l = []
     for p in pattern:
         l.extend([str(x.name) for x in Path(path_to_time_dirs).glob(p)])
@@ -55,17 +86,31 @@ def listTimeDirs(path_to_time_dirs):
     return sorted(l,key=float,reverse=False)
 
 class OpenFOAMpostProcessing(object):
+
+    def fields(self):
+        fields = list(self.data.columns)
+        fields.remove('time')
+        return fields
+    
+    def __str__(self):
+        return str(self.data.head())
     
     def __init__(self,base_dir,file_name,names,usecols,case_dir=None,time_dirs=None,scale=None,tmin=None,tmax=None):
         
-        self.names = names
-        
+        # create and empty reader
+        if base_dir is None and file_name is None:
+            self.data = pd.DataFrame(columns={'time':[]})
+            return
+       
         if case_dir is None:
             self.case_dir = os.getcwd()
         else:
             self.case_dir = case_dir
-        
-        self.base_dir = os.path.join(self.case_dir,'postProcessing',base_dir)
+
+        try:
+            self.base_dir = os.path.join(self.case_dir,'postProcessing',base_dir)
+        except TypeError:
+            self.data = pd.DataFrame(columns=names)
         
         if time_dirs is None:
             self.time_dirs = listTimeDirs(self.base_dir)
@@ -104,7 +149,7 @@ class OpenFOAMvp(OpenFOAMpostProcessing):
         super().__init__(base_dir=base_dir, file_name=file_name, names=names, usecols=usecols, case_dir=case_dir)
 
 
-class OpenFOAMForces(OpenFOAMpostProcessing):
+class OpenFOAMforces(OpenFOAMpostProcessing):
     
     def __init__(self,base_dir='forces',file_name='forces.dat',case_dir=None,scale=None,tmin=None,tmax=None):
         
@@ -141,7 +186,8 @@ class OpenFOAMresiduals(OpenFOAMpostProcessing):
     
     def __init__(self,base_dir='residuals',file_name='residuals.dat',case_dir=None,tmin=None,tmax=None):
         
-        #we do not know in advance how many columns we have and also which time dirs are present
+        # we do not know in advance how many columns we have (e.g. laminar or turbulent case, etc.) 
+        # and also which time dirs are present
         names = ['time'] + ['r' + str(x) for x in range(10)]
         
         super().__init__(base_dir=base_dir,file_name=file_name,names=names,usecols=None,case_dir=case_dir,scale=None,tmin=tmin,tmax=tmax)
@@ -155,15 +201,32 @@ class OpenFOAMresiduals(OpenFOAMpostProcessing):
                     break
         header = header.replace('#','').split()[:]
         header[0] = 'time'
-        self.data.columns = header
-        self.names = list(header[1:])
+
+        try:        
+            self.data.columns = header
+            self.names = list(header[1:])
+        except ValueError as e:
+            print('OpenFOAMresiduals::init',e)
+        
+        try:
+            self.data['U'] = np.abs(self.data['Ux'].pow(2) + self.data['Uy'].pow(2) + self.data['Uz'].pow(2))
+            self.data.drop(columns=['Ux','Uy','Uz'],inplace=True)
+            
+        except Exception:
+            pass
+
+        # TODO: we should add the sort functionality to the base class and provide a default sort dict to 
+        # all derived classed, where required.         
+        SORT_ORDER = {"U": 0, "Ux": 1, "Uy": 2, "Uz": 3, "p": 4, "p_rgh": 5, "k": 6, "omega":7,'time':-1}
+        self.data = self.data.reindex(sorted(self.data.columns,key=lambda val: SORT_ORDER[val]),axis=1)
         
 
 class OpenFOAMtime(OpenFOAMpostProcessing):
     
     def __init__(self,base_dir,file_name='time.dat',case_dir=None,tmin=None,tmax=None):
         
-        #we do not know in advance how many columns we have and also which time dirs are present
+        # we do not know in advance how many columns we have (as we can write e.g. with or without per-time-step values)
+        # and also which time dirs are present
         names = ['time'] + ['r' + str(x) for x in range(10)]
         
         super().__init__(base_dir=base_dir,file_name=file_name,names=names,usecols=None,case_dir=case_dir,scale=None,tmin=tmin,tmax=tmax)
@@ -185,7 +248,7 @@ def residuals(base_dir='residuals'):
 
 def forces(base_dir='forces',file_name='forces.dat',case_dir=None,scale=None,tmin=None,tmax=None):
     
-    return OpenFOAMForces(base_dir=base_dir,file_name=file_name,case_dir=case_dir,scale=scale,tmin=tmin,tmax=tmax).data
+    return OpenFOAMforces(base_dir=base_dir,file_name=file_name,case_dir=case_dir,scale=scale,tmin=tmin,tmax=tmax).data
     
 def rigidBodyState(file_name='hull.dat',case_dir=None,tmin=None,tmax=None):
     

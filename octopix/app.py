@@ -1,36 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-
 import sys
 from pathlib import Path
 from datetime import datetime
 
+import pandas as pd
+
 from octopix.show.canvas import canvasLayout
 from octopix.data.fileOps import OFppScanner,are_equal
+from octopix.data.fileIO import makeRuntimeSelectableReader,prepare_data
 
 import matplotlib
 matplotlib.use('Qt5Agg')
 
-from PyQt5.QtGui import QPalette, QColor,QDoubleValidator,QIcon
-from PyQt5.QtWidgets import QVBoxLayout,QHBoxLayout,QFormLayout,QGridLayout,QAction,qApp,QAbstractItemView,QSpacerItem,QSizePolicy
-from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox,\
-    QLabel,QLineEdit,QPushButton,QPlainTextEdit,QTabWidget,QListWidget
 from PyQt5.QtCore import pyqtSlot,QTimer,Qt
-
+from PyQt5.QtGui import QDoubleValidator,QIcon
+from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox,\
+    QLabel,QLineEdit,QPushButton,QPlainTextEdit,QTabWidget,QListWidget,QVBoxLayout,\
+    QHBoxLayout,QFormLayout,QGridLayout,QAction,qApp,QAbstractItemView,QSpacerItem,\
+    QSizePolicy
 
 supported_post_types = ['residuals','forces','rigidBodyState','time','fieldMinMax']
-
-class Color(QWidget):
-
-    def __init__(self, color, *args, **kwargs):
-        super(Color, self).__init__(*args, **kwargs)
-        self.setAutoFillBackground(True)
-
-        palette = self.palette()
-        palette.setColor(QPalette.Window, QColor(color))
-        self.setPalette(palette)
-
 
 class Octopix(QMainWindow):
 
@@ -82,7 +73,6 @@ class Octopix(QMainWindow):
         self.OFscanner = OFppScanner(supported_types=supported_post_types, working_dir=Path.cwd())
         
         self.data_type = None
-        self.fields = None
         self.data_subset = []
         self.eval_time_start = 0.0
         dark_mode = False
@@ -234,17 +224,28 @@ class Octopix(QMainWindow):
         except:
             data_name = None
 
-        self.canvas_layout.mplCanvas.update_plot(self.data_type,data_name,self.eval_time_start,self.data_subset)
+        # load the data and provide the dataframe to canvas 
+        # data_type defines the reader
+        reader = makeRuntimeSelectableReader(reader_name=self.data_type,file_name=data_name)
+        fields = reader.fields()
+        df = prepare_data(reader.data,self.eval_time_start,self.data_subset)
+
+        self.canvas_layout.mplCanvas.update_plot(df,self.data_type,data_name)
         
-        self.statistics_text_field.setPlainText(str(self.canvas_layout.mplCanvas.des))
-        self.fields = self.canvas_layout.mplCanvas.fields
-        
-        if not are_equal([str(self.fieldslist.item(x).text()) for x in range(self.fieldslist.count())], self.fields):
+        if not are_equal([str(self.fieldslist.item(x).text()) for x in range(self.fieldslist.count())], fields):
             self.fieldslist.clear() 
-            self.fieldslist.addItems(self.fields)
+            self.fieldslist.addItems(fields)
             self.fieldslist.selectAll()
         
         self.data_subset = [ x.text() for x in self.fieldslist.selectedItems() ]
+        
+        try:
+            des = df.describe().T.loc[:,['mean','min','max','std']]
+        except:
+            des = pd.DataFrame()
+        
+        self.statistics_text_field.setPlainText(str(des))
+        
 
 
     def _output(self,text):
@@ -288,6 +289,8 @@ class Octopix(QMainWindow):
             self.listwidget.clear()
             self.listwidget.addItems(self.OFscanner.ppObjects[self.data_type])
             self.listwidget.setCurrentRow(0)
+            
+            self.data_subset = []
                             
             self.update_plot()
             
