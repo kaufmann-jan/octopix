@@ -87,6 +87,12 @@ def listTimeDirs(path_to_time_dirs):
 
 class OpenFOAMpostProcessing(object):
 
+    def sortFields(self):  
+        try: 
+            self.data = self.data.reindex(sorted(self.data.columns,key=lambda val: self.SORT_ORDER[val]),axis=1)
+        except KeyError as e:
+            print(e)
+
     def fields(self):
         fields = list(self.data.columns)
         fields.remove('time')
@@ -155,6 +161,10 @@ class OpenFOAMforces(OpenFOAMpostProcessing):
         
         names = ['time','fxp','fyp','fzp','fxv','fyv','fzv','fxpor','fypor','fzpor', 'mxp','myp','mzp','mxv','myv','mzv','mxpor','mypor','mzpor']
         usecols = ['time','fxp','fyp','fzp','fxv','fyv','fzv','mxp','myp','mzp','mxv','myv','mzv']
+
+        self.SORT_ORDER = {'time':-1, "fx": 0}        
+        for i in range(1,len(usecols)):
+            self.SORT_ORDER[usecols[i]] = i
         
         try:
             super().__init__(base_dir=base_dir,file_name=file_name,case_dir=case_dir,names=names,usecols=usecols,scale=scale,tmin=tmin,tmax=tmax)
@@ -166,11 +176,13 @@ class OpenFOAMforces(OpenFOAMpostProcessing):
         self.data['fx'] = self.data['fxp'] + self.data['fxv']
         
         self.timeRange()
-
-class OpenFOAMRigidBodyState(OpenFOAMpostProcessing):
-    
-    def __init__(self,file_name='hull.dat',case_dir=None,scale=None,subtractInitialCoG=True,tmin=None,tmax=None):
         
+        self.sortFields()
+
+class OpenFOAMrigidBodyState(OpenFOAMpostProcessing):
+    
+    def __init__(self,file_name='hull.dat',case_dir=None,scale=None,subtractInitialCoG=True,tmin=None,tmax=None,base_dir=None):
+
         names = ['time','x','y','z','roll','pitch','yaw','vx','vy','vz','vroll','vpitch','vyaw','xvcorr','yvcorr','zvcorr']
         
         super().__init__(base_dir='rigidBodyState',file_name=file_name,names=names,usecols=None,case_dir=case_dir,scale=scale,tmin=tmin,tmax=tmax)
@@ -185,6 +197,8 @@ class OpenFOAMRigidBodyState(OpenFOAMpostProcessing):
 class OpenFOAMresiduals(OpenFOAMpostProcessing):
     
     def __init__(self,base_dir='residuals',file_name='residuals.dat',case_dir=None,tmin=None,tmax=None):
+        
+        self.SORT_ORDER = {"U": 0, "Ux": 1, "Uy": 2, "Uz": 3, "p": 4, "p_rgh": 5, "k": 6, "omega":7,'time':-1}
         
         # we do not know in advance how many columns we have (e.g. laminar or turbulent case, etc.) 
         # and also which time dirs are present
@@ -215,10 +229,10 @@ class OpenFOAMresiduals(OpenFOAMpostProcessing):
         except Exception:
             pass
 
-        # TODO: we should add the sort functionality to the base class and provide a default sort dict to 
-        # all derived classed, where required.         
-        SORT_ORDER = {"U": 0, "Ux": 1, "Uy": 2, "Uz": 3, "p": 4, "p_rgh": 5, "k": 6, "omega":7,'time':-1}
-        self.data = self.data.reindex(sorted(self.data.columns,key=lambda val: SORT_ORDER[val]),axis=1)
+        self.timeRange()
+            
+        self.sortFields()
+        
         
 
 class OpenFOAMtime(OpenFOAMpostProcessing):
@@ -242,6 +256,34 @@ class OpenFOAMtime(OpenFOAMpostProcessing):
         header[0] = 'time'
         self.data.columns = header
         
+        self.timeRange()
+        
+        
+class OpenFOAMfieldMinMax(OpenFOAMpostProcessing):
+    
+    def __init__(self,base_dir,file_name='fieldMinMax.dat',case_dir=None,tmin=None,tmax=None):
+        
+        names = ['time','field','min','locationX(min)','locationY(min)','locationZ(min)','processor(min)','max','locationX(max)','locationY(max)','locationZ(max)','processor(max)']
+        usecols = ['time','field','min','max']
+        
+        super().__init__(base_dir=base_dir,file_name=file_name,names=names,usecols=usecols,case_dir=case_dir,scale=None,tmin=tmin,tmax=tmax)
+        
+        fields = self.data['field'].unique()
+    
+        dfs = [self.data.loc[self.data['field'] == field] for field in fields ]
+        dfs = [df.drop(columns=['field']) for df in dfs]
+        dfs = [df.set_index('time',drop=True) for df in dfs]
+        
+        for i,df in enumerate(dfs):
+            mapper = {k:"{0:}_{1:}".format(k,fields[i]) for k in list(df.columns)}
+            df.rename(columns=mapper,inplace=True)
+        
+        self.data = pd.concat(dfs,axis=1)
+        
+        self.data['time'] = self.data.index
+        
+        self.timeRange()
+    
 
 def residuals(base_dir='residuals'):
     return OpenFOAMresiduals(base_dir=base_dir).data
@@ -252,7 +294,7 @@ def forces(base_dir='forces',file_name='forces.dat',case_dir=None,scale=None,tmi
     
 def rigidBodyState(file_name='hull.dat',case_dir=None,tmin=None,tmax=None):
     
-    return OpenFOAMRigidBodyState(file_name=file_name,case_dir=case_dir,tmin=tmin,tmax=tmax).data
+    return OpenFOAMrigidBodyState(file_name=file_name,case_dir=case_dir,tmin=tmin,tmax=tmax).data
 
 def time(base_dir='timeMonitor'):
     return OpenFOAMtime(base_dir=base_dir).data.drop(columns=['cpu','clock']) 
@@ -262,6 +304,19 @@ def main():
     
     t = OpenFOAMtime(base_dir='timeMonitor')
     
+    t = OpenFOAMfieldMinMax(base_dir='minMaxMag')
+    fields = t.data.field.unique()
+    
+    dfs = [t.data.loc[t.data['field'] == field] for field in fields ]
+    dfs = [df.drop(columns=['field']) for df in dfs]
+    dfs = [df.set_index('time',drop=True) for df in dfs]
+    for i,df in enumerate(dfs):
+        mapper = {k:"{0:}_{1:}".format(k,fields[i]) for k in list(df.columns)}
+        df.rename(columns=mapper,inplace=True)
+        
+    result = pd.concat(dfs,axis=1)
+    print(result)
+ 
 
 
 if __name__ == '__main__':

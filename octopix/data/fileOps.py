@@ -51,8 +51,13 @@ def findAllOFppObjects(supported_types,working_dir=Path.cwd()):
                 ppObjects[Path(dat_files[0]).stem].append(val)
             except:
                 pass
-    
+      
     ppObjects = {k:v for (k,v) in ppObjects.items() if len(v) > 0}
+    
+    if 'rigidBodyState' in get_pdirs(working_dir):
+        
+        ppObjects['rigidBodyState'] = get_ddirs(get_tdirs('rigidBodyState')) 
+    
     #ppObjects = {k:sorted(v,reverse=True) for (k,v) in ppObjects.items()}
     ppObjects = {k:sorted(v,key=lambda x: x.replace('_','{')) for (k,v) in ppObjects.items()}
         
@@ -78,19 +83,7 @@ def main():
     
     supported_post_types = ['residuals','forces','rigidBodyState','time','fieldMinMax']
     ppObjects = findAllOFppObjects(supported_post_types)
-    
-    #ppObjects = findAllOFPostProcObjects()
-    print(list(ppObjects.keys()))
-    print(list(ppObjects.values()))
-        
-    comboItems = []
-    currentItems = ['forces','residuals']
-    comboItems += listDiff(comboItems,currentItems)
-    print(comboItems)
-    
-    currentItems = ['forces','residuals','foo']
-    comboItems += listDiff(comboItems,currentItems)
-    print(comboItems)
+    print(ppObjects)
 
 if __name__ == '__main__':
     main()

@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 
-default_show = {'forces':'fx','residuals':'all'}
+supported_post_types = ['residuals','forces','rigidBodyState','time','fieldMinMax']
+
+default_show = {'forces':['fx'],'rigidBodyState':['z','pitch'],'time':['cpu/step','clock/step']}
 
 import configparser
 

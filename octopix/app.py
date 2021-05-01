@@ -21,7 +21,9 @@ from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox
     QHBoxLayout,QFormLayout,QGridLayout,QAction,qApp,QAbstractItemView,QSpacerItem,\
     QSizePolicy
 
-supported_post_types = ['residuals','forces','rigidBodyState','time','fieldMinMax']
+from octopix.common.config import supported_post_types,default_show
+
+
 
 class Octopix(QMainWindow):
 
@@ -235,7 +237,11 @@ class Octopix(QMainWindow):
         if not are_equal([str(self.fieldslist.item(x).text()) for x in range(self.fieldslist.count())], fields):
             self.fieldslist.clear() 
             self.fieldslist.addItems(fields)
-            self.fieldslist.selectAll()
+            fields_to_select = default_show.get(self.data_type,fields)
+            for i in range(self.fieldslist.count()):
+                list_item = self.fieldslist.item(i) 
+                if list_item.text() in fields_to_select:
+                    list_item.setSelected(True)
         
         self.data_subset = [ x.text() for x in self.fieldslist.selectedItems() ]
         
