@@ -3,10 +3,10 @@ octopix is a small, lightweight GUI for showing / plotting (mainly) OpenFOAM tim
 
 ## Installation
 
-tbd. 
+tbd. Maybe sometimes in the future we can do something like
 
 ```bash
-git clone ....
+pip install octopix
 ```
 
 ## Usage
@@ -38,7 +38,7 @@ e.g.
 
 ## Contribution
 
-Contributions are welcome! This is a private project. Therefore time is the most limiting resource... :children_crossing:
+Contributions are welcome! This is a private project, therefore time is the most limiting resource... :children_crossing:
 
 ## License
 
