@@ -10,6 +10,7 @@ import pandas as pd
 from octopix.show.canvas import canvasLayout
 from octopix.data.fileOps import OFppScanner,are_equal
 from octopix.data.fileIO import makeRuntimeSelectableReader,prepare_data
+from octopix.data.funcs import getAllListItems,getSelectedListItems
 
 import matplotlib
 matplotlib.use('Qt5Agg')
@@ -21,8 +22,7 @@ from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox
     QHBoxLayout,QFormLayout,QGridLayout,QAction,qApp,QAbstractItemView,QSpacerItem,\
     QSizePolicy
 
-from octopix.common.config import supported_post_types,default_show
-
+from octopix.common.config import supported_post_types,default_field_selection
 
 
 class Octopix(QMainWindow):
@@ -78,6 +78,7 @@ class Octopix(QMainWindow):
         self.data_subset = []
         self.eval_time_start = 0.0
         dark_mode = False
+        self.current_field_selection = {k:[] for k in supported_post_types}
         #---------------------------
         
         settings_layout = QVBoxLayout()
@@ -101,20 +102,23 @@ class Octopix(QMainWindow):
         verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
         settings_layout.addItem(verticalSpacer)        
         settings_layout.addLayout(flo)
-
         
-        self.listwidget = QListWidget()
-        self.listwidget.setStyleSheet("background-color:lightgray")
+        self.filelist = QListWidget()
+        self.filelist.setAlternatingRowColors(True)
+        self.filelist.setStyleSheet("alternate-background-color:rgb(192,192,192);background-color:rgb(211,211,211);")
+        self.filelist.setMaximumSize(150, 100) # (width, height)
         
-        self.fieldslist = QListWidget()
-        self.fieldslist.setStyleSheet("background-color:lightgray")
-        self.fieldslist.setSelectionMode(QAbstractItemView.ExtendedSelection)  
-        self.fieldslist.itemSelectionChanged.connect(self.fieldsSelectionChanged)              
+        self.fieldlist = QListWidget()
+        self.fieldlist.setAlternatingRowColors(True)
+        self.fieldlist.setStyleSheet("alternate-background-color:rgb(192,192,192);background-color:rgb(211,211,211);")
+        self.fieldlist.setMaximumSize(150,120)
+        self.fieldlist.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.fieldlist.itemSelectionChanged.connect(self.fieldsSelectionChanged)              
         
         settings_layout.addWidget(QLabel('Files:'))
-        settings_layout.addWidget(self.listwidget)
+        settings_layout.addWidget(self.filelist)
         settings_layout.addWidget(QLabel('Fields:'))
-        settings_layout.addWidget(self.fieldslist)
+        settings_layout.addWidget(self.fieldlist)
         settings_layout.addStretch(1)
          
         # Initialize tab screen
@@ -184,7 +188,7 @@ class Octopix(QMainWindow):
             self.setStyleSheet("background-color:rgb(130, 138, 140);")
             self.output_text_field.setStyleSheet("background-color:rgb(139, 146, 148);")
             self.statistics_text_field.setStyleSheet("background-color:rgb(139, 146, 148);")
-            self.listwidget.setStyleSheet("background-color:rgb(139, 146, 148);")
+            self.filelist.setStyleSheet("background-color:rgb(139, 146, 148);")
         
         if show_gui:
             self.show()
@@ -219,10 +223,10 @@ class Octopix(QMainWindow):
             self.cb.addItems(self.OFscanner.post_types)
         
         if len(self.OFscanner.post_types) == 0:
-            self.listwidget.clear()
+            self.filelist.clear()
         
         try:
-            data_name = self.listwidget.currentItem().text()
+            data_name = self.filelist.currentItem().text()
         except:
             data_name = None
 
@@ -234,16 +238,24 @@ class Octopix(QMainWindow):
 
         self.canvas_layout.mplCanvas.update_plot(df,self.data_type,data_name)
         
-        if not are_equal([str(self.fieldslist.item(x).text()) for x in range(self.fieldslist.count())], fields):
-            self.fieldslist.clear() 
-            self.fieldslist.addItems(fields)
-            fields_to_select = default_show.get(self.data_type,fields)
-            for i in range(self.fieldslist.count()):
-                list_item = self.fieldslist.item(i) 
+        # if data type has changed, we need to update the list of fields
+        if not are_equal(getAllListItems(self.fieldlist), fields):
+
+            # either apply the previous selection or the default if prev is empty
+            if self.current_field_selection[self.data_type]:
+                fields_to_select = self.current_field_selection[self.data_type]
+            else:
+                fields_to_select = default_field_selection.get(self.data_type,fields)
+                
+            self.fieldlist.clear() 
+            self.fieldlist.addItems(fields)
+                
+            for i in range(self.fieldlist.count()):
+                list_item = self.fieldlist.item(i) 
                 if list_item.text() in fields_to_select:
                     list_item.setSelected(True)
         
-        self.data_subset = [ x.text() for x in self.fieldslist.selectedItems() ]
+        self.data_subset = getSelectedListItems(self.fieldlist)
         
         try:
             des = df.describe().T.loc[:,['mean','min','max','std']]
@@ -292,9 +304,9 @@ class Octopix(QMainWindow):
         try:
             self.data_type = self.OFscanner.post_types[i]
            
-            self.listwidget.clear()
-            self.listwidget.addItems(self.OFscanner.ppObjects[self.data_type])
-            self.listwidget.setCurrentRow(0)
+            self.filelist.clear()
+            self.filelist.addItems(self.OFscanner.ppObjects[self.data_type])
+            self.filelist.setCurrentRow(0)
             
             self.data_subset = []
                             
@@ -306,7 +318,8 @@ class Octopix(QMainWindow):
             
     def fieldsSelectionChanged(self):
         
-        self.data_subset = [ x.text() for x in self.fieldslist.selectedItems() ]
+        self.data_subset = getSelectedListItems(self.fieldlist)
+        self.current_field_selection[self.data_type] = getSelectedListItems(self.fieldlist)
         self.update_plot()
         
         
