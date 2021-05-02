@@ -14,10 +14,10 @@ import pandas as pd
 
 from octopix.data.funcs import are_equal
 
-class canvasLayout(QVBoxLayout):
+class CanvasLayout(QVBoxLayout):
 
     def __init__(self, canvas_settings={},*args, **kwargs):
-        super(canvasLayout,self).__init__(*args, **kwargs)
+        super(CanvasLayout,self).__init__(*args, **kwargs)
         
         self.mplCanvas = MplCanvas(settings=canvas_settings)
         self.toolbar = NavigationToolbar(self.mplCanvas,None)

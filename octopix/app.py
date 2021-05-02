@@ -7,22 +7,19 @@ from datetime import datetime
 
 import pandas as pd
 
-from octopix.show.canvas import canvasLayout
+from octopix.show.console import Console
+from octopix.show.canvas import CanvasLayout
 from octopix.data.scanner import OFppScanner
 from octopix.data.reader import makeRuntimeSelectableReader,prepare_data
 from octopix.data.funcs import getAllListItems,getSelectedListItems,are_equal
-
+from octopix.common.config import supported_post_types,default_field_selection
+from octopix.common.config import OctopixConfigurator
 
 from PyQt5.QtCore import pyqtSlot,QTimer,Qt
 from PyQt5.QtGui import QDoubleValidator,QIcon
 from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox,\
-    QLabel,QLineEdit,QPushButton,QPlainTextEdit,QTabWidget,QListWidget,QVBoxLayout,\
-    QHBoxLayout,QFormLayout,QGridLayout,QAction,qApp,QAbstractItemView,QSpacerItem,\
-    QSizePolicy
-
-from octopix.common.config import supported_post_types,default_field_selection
-from octopix.common.config import OctopixConfigurator,getBool
-
+    QLabel,QLineEdit,QPushButton,QListWidget,QVBoxLayout,QHBoxLayout,QFormLayout,\
+    QGridLayout,QAction,qApp,QAbstractItemView,QSpacerItem,QSizePolicy
 
 class Octopix(QMainWindow):
 
@@ -110,41 +107,12 @@ class Octopix(QMainWindow):
         settings_layout.addWidget(QLabel('Fields:'))
         settings_layout.addWidget(self.fieldlist)
         settings_layout.addStretch(1)
-         
-        # Initialize tab screen
-        self.tabs = QTabWidget(self)
-        self.output_tab = QWidget()
-        self.statistics_tab = QWidget()
-        # Add tabs
-        self.tabs.addTab(self.output_tab,"Output")
-        self.tabs.addTab(self.statistics_tab,"Statistics") 
-         
-        self.output_text_field = QPlainTextEdit()
-        self.output_text_field.setReadOnly(True)
-        self.output_text_field.setStyleSheet("background-color:lightgray")
 
-        self.output_tab.layout = QVBoxLayout()
-        self.output_tab.layout.addWidget(self.output_text_field)
-        self.output_tab.setLayout(self.output_tab.layout)
-
-        self.statistics_text_field = QPlainTextEdit()
-        self.statistics_text_field.setReadOnly(True)
-        self.statistics_text_field.setStyleSheet("background-color:lightgray")
-          
-        self.statistics_tab.layout = QVBoxLayout()
-        self.statistics_tab.layout.addWidget(self.statistics_text_field)
-        exportButton = QPushButton('Export')
-        hbox = QHBoxLayout()
-        hbox.addStretch(1)
-        hbox.addWidget(exportButton)
-        self.statistics_tab.layout.addLayout(hbox)
-        self.statistics_tab.setLayout(self.statistics_tab.layout)
-        
-        auto_update_settings = self.config.getSection('autoupdate')
-        self.auto_update = getBool(auto_update_settings.get('active_on_start','True'))
+        # the tabs        
+        self.console = Console()
         
         self.auto_update_checkBox = QCheckBox("Autoupdate",self)
-        self.auto_update_checkBox.setChecked(self.auto_update)
+        self.auto_update_checkBox.setChecked(self.config.getboolean('autoupdate','active_on_start'))
         self.auto_update_checkBox.stateChanged.connect(self.on_auto_update_clicked)
         
         reload_button = QPushButton('Reload', self)
@@ -156,13 +124,14 @@ class Octopix(QMainWindow):
         hbox.addStretch(1)
         hbox.addWidget(reload_button)
         
-        settings_layout.addLayout(hbox)    
-        self.canvas_layout = canvasLayout(self.config.getSection('canvas'))
+        settings_layout.addLayout(hbox)   
+         
+        self.canvas_layout = CanvasLayout(self.config['canvas'])
 
         outer_layout = QGridLayout()
         outer_layout.addLayout(settings_layout,0,0,3,1)
         outer_layout.addLayout(self.canvas_layout,0,2)
-        outer_layout.addWidget(self.tabs,2,2)
+        outer_layout.addWidget(self.console,2,2)
         outer_layout.setColumnStretch(0,0)
         outer_layout.setColumnStretch(2,2)
         outer_layout.setRowStretch(0,2)
@@ -175,10 +144,10 @@ class Octopix(QMainWindow):
 
         self.update()
         
-        if self.config.getboolean('appearance','dark_mode',fallback=False):
+        if self.config.getboolean('appearance','dark_mode'):
             self.setStyleSheet("background-color:rgb(130, 138, 140);")
-            self.output_text_field.setStyleSheet("background-color:rgb(139, 146, 148);")
-            self.statistics_text_field.setStyleSheet("background-color:rgb(139, 146, 148);")
+            self.console.output_text_field.setStyleSheet("background-color:rgb(139, 146, 148);")
+            self.console.statistics_text_field.setStyleSheet("background-color:rgb(139, 146, 148);")
             self.filelist.setStyleSheet("background-color:rgb(139, 146, 148);")
             self.fieldlist.setStyleSheet("background-color:rgb(139, 146, 148);")
         
@@ -189,15 +158,11 @@ class Octopix(QMainWindow):
             sys.exit(0)
             
         
-        # Setup a timer to trigger the redraw by calling update_plot.
+        # Timer to trigger the reloading and redrawing by calling te update function.
         self.timer = QTimer()
         self.timer.setInterval(1000)
-        #self.timer.timeout.connect(lambda: self.sc.update_plot(self.data_type,self.eval_time_start))
         self.timer.timeout.connect(self.update)
-
         self.on_auto_update_clicked(self.auto_update_checkBox.isChecked())
-
-        self.statusBar().showMessage('Ready')
 
 
     def update(self):
@@ -253,16 +218,8 @@ class Octopix(QMainWindow):
         except:
             des = pd.DataFrame()
         
-        self.statistics_text_field.setPlainText(str(des))
-        
+        self.console.statistics_text_field.setPlainText(str(des))
 
-
-    def _output(self,text):
-        
-        now = datetime.now().strftime("%H:%M:%S")
-        txt = "{0:}: {1:}".format(now,text)
-        
-        self.output_text_field.appendPlainText(txt)
 
     def on_auto_update_clicked(self, state):
         """Auto update checkbox
@@ -274,10 +231,10 @@ class Octopix(QMainWindow):
             Qt.Checked,Qt.Unchecked
         """
         if state == Qt.Checked or state:
-            self._output('Autoupdate on')
+            self.console.sendToOutput('Autoupdate on')
             self.timer.start()
         elif state == Qt.Unchecked or not state:
-            self._output('Autoupdate off')
+            self.console.sendToOutput('Autoupdate off')
             self.timer.stop()
         else:
             raise TypeError
@@ -285,7 +242,7 @@ class Octopix(QMainWindow):
 
     @pyqtSlot()
     def on_reload_data(self):
-        """Reload data button
+        """Reload data push button
         """
         self._output('Reloading data')
         self.update()

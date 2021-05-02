@@ -32,7 +32,7 @@ cfg_data = {
     'autoupdate':
     {
             'interval': 1.0,
-            'active_on_start':True
+            'active_on_start': True
     }
     
 }
@@ -41,10 +41,6 @@ def getBool(s):
     return bool(util.strtobool(s))
 
 class OctopixConfigurator(ConfigParser):
-    
-    def getSection(self,section):
-        
-        return {x[0]:x[1] for x in self.items(section) }
     
     def _writeConfigFile(self):
         
@@ -66,9 +62,9 @@ def main():
     c._writeConfigFile()
 
 
-    print(c.getSection('autoupdate'))
-    canvas_settings = c.getSection('canvas')
-    print(canvas_settings)
+    print(c.getfloat('autoupdate','interval'))
+    print(c._sections['autoupdate'])
+    print(c['autoupdate'])
 
 if __name__ == '__main__':
     main()
