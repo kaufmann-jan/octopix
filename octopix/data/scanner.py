@@ -2,16 +2,7 @@
 # -*- coding: utf-8 -*-*-
 
 from pathlib import Path
-
-def flatten(l):
-    
-    return [item for sublist in l for item in sublist]
-
-
-def is_unique(l):
-    
-    return l.count(l[0]) == len(l)
-
+from octopix.data.funcs import flatten,is_unique
 
 def get_pdirs(working_dir=Path.cwd()):
     
@@ -27,17 +18,6 @@ def get_ddirs(tdirs):
     
     t = flatten([list(p.glob('*.dat')) for p in tdirs])
     return [p.name for p in t]
-
-
-def listDiff(l1,l2):
-    
-    diff = [x for x in set(l2) if x not in set(l1)]
-    return diff
-
-
-def are_equal(l1,l2):
-    return (set(l1) == set(l2))
-
    
 
 def findAllOFppObjects(supported_types,working_dir=Path.cwd()):

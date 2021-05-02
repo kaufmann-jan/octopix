@@ -9,14 +9,14 @@ from PyQt5.QtWidgets import QVBoxLayout
 import numpy as np
 import pandas as pd
 
-from octopix.data.fileOps import are_equal
+from octopix.data.funcs import are_equal
 
 class canvasLayout(QVBoxLayout):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, canvas_settings={},*args, **kwargs):
         super(canvasLayout,self).__init__(*args, **kwargs)
         
-        self.mplCanvas = MplCanvas()
+        self.mplCanvas = MplCanvas(settings=canvas_settings)
         self.toolbar = NavigationToolbar(self.mplCanvas,None)
         
         self.addWidget(self.toolbar)
@@ -25,7 +25,7 @@ class canvasLayout(QVBoxLayout):
 
 class MplCanvas(FigureCanvasQTAgg):
 
-    def __init__(self, parent=None, width=5, height=4, dpi=100):
+    def __init__(self, parent=None, width=5, height=4, dpi=100,settings={}):
         self.fig = Figure(figsize=(width, height), dpi=dpi, tight_layout=True)
         self.axes = self.fig.add_subplot(111)
         super(MplCanvas, self).__init__(self.fig)
@@ -35,48 +35,47 @@ class MplCanvas(FigureCanvasQTAgg):
         self.current_data_type = None
         self.current_data_file = None
         self.fields = None
+        self.style = settings.get('style','classic')
+
                 
-    def _setPlotStyle(self,style='dark'):
+    def _setPlotStyle(self):
         
-        if style is None:
-            self.axes.grid(True,linestyle='-',color='black')
+        if self.style == 'classic':
+            
             fig_facecolor = 'white'
             axes_facecolor = 'white'
+            grid_color = 'black'
             text_color = 'black'
-
-            self.fig.set_facecolor(fig_facecolor)
-            self.axes.set_facecolor(axes_facecolor)
-            self.axes.xaxis.label.set_color(text_color)
-            self.axes.yaxis.label.set_color(text_color)
-            self.axes.tick_params(colors=text_color)
-
-            for spine in ['left','right','top','bottom']:
-                self.axes.spines[spine].set_visible(True) 
+            spines_visible = True
+            grid_linestyle = '-'
                            
-        else:
-            if style == 'bright':
-                fig_facecolor = np.array([204.,213,230])/255.
-                axes_facecolor = np.array([173.,182,199])/255.
-                text_color = 'black'
-                grid_color = 'white'
-            elif style == 'dark':
-                fig_facecolor = np.array([129, 140, 143])/255.
-                axes_facecolor = np.array([141, 154, 158])/255.
-                #fig_facecolor = np.array([72,77,73])/255.
-                #axes_facecolor = np.array([83,89,85])/255.
-                grid_color = 'lightgray'
-                text_color = 'white'
+        elif self.style == 'bright':
+            fig_facecolor = np.array([204.,213,230])/255.
+            axes_facecolor = np.array([173.,182,199])/255.
+            text_color = 'black'
+            grid_color = 'white'
+            spines_visible = False
+            grid_linestyle = ':'
+            
+        elif self.style == 'dark':
+            fig_facecolor = np.array([129, 140, 143])/255.
+            axes_facecolor = np.array([141, 154, 158])/255.
+            grid_color = 'lightgray'
+            text_color = 'white'
+            spines_visible = False
+            grid_linestyle = ':'
+            
 
-            self.fig.set_facecolor(fig_facecolor)
-            self.axes.grid(True,linestyle=':',color=grid_color)
-            self.axes.set_facecolor(axes_facecolor)
-            self.axes.xaxis.label.set_color(text_color)
-            self.axes.yaxis.label.set_color(text_color)
-            self.axes.tick_params(colors=text_color)
-            self.axes.tick_params(colors=text_color, which='both')
+        self.fig.set_facecolor(fig_facecolor)
+        self.axes.grid(True,linestyle=grid_linestyle,color=grid_color)
+        self.axes.set_facecolor(axes_facecolor)
+        self.axes.xaxis.label.set_color(text_color)
+        self.axes.yaxis.label.set_color(text_color)
+        self.axes.tick_params(colors=text_color)
+        self.axes.tick_params(colors=text_color, which='both')
 
-            for spine in ['left','right','top','bottom']:
-                self.axes.spines[spine].set_visible(False)
+        for spine in ['left','right','top','bottom']:
+            self.axes.spines[spine].set_visible(spines_visible)
     
  
     def clear(self):

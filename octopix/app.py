@@ -8,9 +8,9 @@ from datetime import datetime
 import pandas as pd
 
 from octopix.show.canvas import canvasLayout
-from octopix.data.fileOps import OFppScanner,are_equal
-from octopix.data.fileIO import makeRuntimeSelectableReader,prepare_data
-from octopix.data.funcs import getAllListItems,getSelectedListItems
+from octopix.data.scanner import OFppScanner
+from octopix.data.reader import makeRuntimeSelectableReader,prepare_data
+from octopix.data.funcs import getAllListItems,getSelectedListItems,are_equal
 
 import matplotlib
 matplotlib.use('Qt5Agg')
@@ -23,6 +23,7 @@ from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox
     QSizePolicy
 
 from octopix.common.config import supported_post_types,default_field_selection
+from octopix.common.config import OctopixConfigurator
 
 
 class Octopix(QMainWindow):
@@ -64,6 +65,8 @@ class Octopix(QMainWindow):
         
         self.setGeometry(140, 140, 1150, 900)
         
+        self.config = OctopixConfigurator()
+        
         # --------------
         # user input and defaults
         # data type should be selectable by the GUI
@@ -87,12 +90,11 @@ class Octopix(QMainWindow):
         e1.setMaximumWidth(100)
         #e1.setText(str(0.0))
         e1.setValidator(QDoubleValidator())
-        e1.textEdited.connect(self.onChanged)
+        e1.textEdited.connect(self.on_read_eval_start_time)
 
         self.cb = QComboBox()
         self.cb.setMaximumWidth(100)
-        self.cb.currentIndexChanged.connect(self.selectionChanged)
-        
+        self.cb.currentIndexChanged.connect(self.on_filelist_selection_changed)
 
         flo = QFormLayout()
         
@@ -113,7 +115,7 @@ class Octopix(QMainWindow):
         self.fieldlist.setStyleSheet("alternate-background-color:rgb(192,192,192);background-color:rgb(211,211,211);")
         self.fieldlist.setMaximumSize(150,120)
         self.fieldlist.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.fieldlist.itemSelectionChanged.connect(self.fieldsSelectionChanged)              
+        self.fieldlist.itemSelectionChanged.connect(self.on_fieldlist_selection_changed)              
         
         settings_layout.addWidget(QLabel('Files:'))
         settings_layout.addWidget(self.filelist)
@@ -153,11 +155,11 @@ class Octopix(QMainWindow):
         self.auto_update = True
         self.auto_update_checkBox = QCheckBox("Autoupdate",self)
         self.auto_update_checkBox.setChecked(True)
-        self.auto_update_checkBox.stateChanged.connect(self.clickBox)
+        self.auto_update_checkBox.stateChanged.connect(self.on_auto_update_clicked)
         
         reload_button = QPushButton('Reload', self)
         reload_button.setToolTip('Reload the data')
-        reload_button.clicked.connect(self.on_click)
+        reload_button.clicked.connect(self.on_reload_data)
         
         hbox = QHBoxLayout()
         hbox.addWidget(self.auto_update_checkBox)
@@ -165,8 +167,7 @@ class Octopix(QMainWindow):
         hbox.addWidget(reload_button)
         
         settings_layout.addLayout(hbox)    
-                   
-        self.canvas_layout = canvasLayout()
+        self.canvas_layout = canvasLayout(self.config.getSection('canvas'))
 
         outer_layout = QGridLayout()
         outer_layout.addLayout(settings_layout,0,0,3,1)
@@ -182,7 +183,7 @@ class Octopix(QMainWindow):
         
         self.setCentralWidget(widget)
 
-        self.update_plot()
+        self.update()
         
         if dark_mode:
             self.setStyleSheet("background-color:rgb(130, 138, 140);")
@@ -201,15 +202,15 @@ class Octopix(QMainWindow):
         self.timer = QTimer()
         self.timer.setInterval(1000)
         #self.timer.timeout.connect(lambda: self.sc.update_plot(self.data_type,self.eval_time_start))
-        self.timer.timeout.connect(self.update_plot)
+        self.timer.timeout.connect(self.update)
         if True:
             # start the timer on start-up        
-            self.clickBox(Qt.Checked)
+            self.on_auto_update_clicked(Qt.Checked)
 
         self.statusBar().showMessage('Ready')
 
 
-    def update_plot(self):
+    def update(self):
                 
         self.OFscanner.scan()
         
@@ -273,7 +274,7 @@ class Octopix(QMainWindow):
         
         self.output_text_field.appendPlainText(txt)
 
-    def clickBox(self, state):
+    def on_auto_update_clicked(self, state):
         """Auto update checkbox
         """
         if state == Qt.Checked:
@@ -285,21 +286,21 @@ class Octopix(QMainWindow):
     
 
     @pyqtSlot()
-    def on_click(self):
+    def on_reload_data(self):
         """Reload data button
         """
         self._output('Reloading data')
-        self.update_plot()
+        self.update()
 
-    def onChanged(self,text):
+    def on_read_eval_start_time(self,text):
         try:
             self.eval_time_start = float(text)
         except:
             self._output('ups')
         
-        self.update_plot()
+        self.update()
             
-    def selectionChanged(self,i):
+    def on_filelist_selection_changed(self,i):
         
         try:
             self.data_type = self.OFscanner.post_types[i]
@@ -310,17 +311,17 @@ class Octopix(QMainWindow):
             
             self.data_subset = []
                             
-            self.update_plot()
+            self.update()
             
         except IndexError:
             self.canvas_layout.mplCanvas.clear()
             
             
-    def fieldsSelectionChanged(self):
+    def on_fieldlist_selection_changed(self):
         
         self.data_subset = getSelectedListItems(self.fieldlist)
         self.current_field_selection[self.data_type] = getSelectedListItems(self.fieldlist)
-        self.update_plot()
+        self.update()
         
         
 
