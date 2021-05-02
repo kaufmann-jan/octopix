@@ -69,24 +69,24 @@ class Octopix(QMainWindow):
         self.data_type = None
         self.data_subset = []
         self.eval_time_start = 0.0
-        dark_mode = False
+        dark_mode = self.config.getboolean('appearance','dark_mode')
         self.current_field_selection = {k:[] for k in supported_post_types}
         
         settings_layout = QVBoxLayout()
         
-        e1 = QLineEdit()
-        e1.setMaximumWidth(100)
-        e1.setValidator(QDoubleValidator())
-        e1.textEdited.connect(self.on_read_eval_start_time)
+        self.tmin_textfield = QLineEdit()
+        self.tmin_textfield.setMaximumWidth(100)
+        self.tmin_textfield.setValidator(QDoubleValidator())
+        self.tmin_textfield.textEdited.connect(self.on_read_eval_start_time)
 
-        self.cb = QComboBox()
-        self.cb.setMaximumWidth(100)
-        self.cb.currentIndexChanged.connect(self.on_filelist_selection_changed)
+        self.datatype_comboBox = QComboBox()
+        self.datatype_comboBox.setMaximumWidth(100)
+        self.datatype_comboBox.currentIndexChanged.connect(self.on_datatype_selection_changed)
 
         flo = QFormLayout()
         
-        flo.addRow(QLabel("Tmin:"), e1)
-        flo.addRow(QLabel("Data type:"),self.cb)
+        flo.addRow(QLabel("Tmin:"), self.tmin_textfield)
+        flo.addRow(QLabel("Data type:"),self.datatype_comboBox)
 
         verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
         settings_layout.addItem(verticalSpacer)        
@@ -177,6 +177,7 @@ class Octopix(QMainWindow):
             self.output_text_field.setStyleSheet("background-color:rgb(139, 146, 148);")
             self.statistics_text_field.setStyleSheet("background-color:rgb(139, 146, 148);")
             self.filelist.setStyleSheet("background-color:rgb(139, 146, 148);")
+            self.fieldlist.setStyleSheet("background-color:rgb(139, 146, 148);")
         
         if show_gui:
             self.show()
@@ -203,12 +204,12 @@ class Octopix(QMainWindow):
         
         currentFoundItems = self.OFscanner.post_types
         
-        currentLoadedItems = [self.cb.itemText(i) for i in range(self.cb.count())]
+        currentLoadedItems = [self.datatype_comboBox.itemText(i) for i in range(self.datatype_comboBox.count())]
         
         if not are_equal(currentFoundItems,currentLoadedItems):
             self.canvas_layout.mplCanvas.clear()
-            self.cb.clear()
-            self.cb.addItems(self.OFscanner.post_types)
+            self.datatype_comboBox.clear()
+            self.datatype_comboBox.addItems(self.OFscanner.post_types)
         
         if len(self.OFscanner.post_types) == 0:
             self.filelist.clear()
@@ -287,7 +288,7 @@ class Octopix(QMainWindow):
         
         self.update()
             
-    def on_filelist_selection_changed(self,i):
+    def on_datatype_selection_changed(self,i):
         
         try:
             self.data_type = self.OFscanner.post_types[i]

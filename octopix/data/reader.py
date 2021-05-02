@@ -131,7 +131,7 @@ class OpenFOAMpostProcessing(object):
         self.tmin,self.tmax = tmin,tmax
         
         if scale is not None:
-            self.data = scale * self.data
+            self.data = scale*self.data
 
         self.data.reset_index(inplace=True)
 
@@ -143,16 +143,6 @@ class OpenFOAMpostProcessing(object):
         
         if self.tmax is not None:
             self.data = self.data[self.data['time'] < self.tmax]
-
-
-class OpenFOAMvp(OpenFOAMpostProcessing):
-    
-    def __init__(self,base_dir='vp',file_name='volFieldValue.dat',case_dir=None):
-        
-        names = ['time','vpx','vpy','vpz']
-        usecols = ['time','vpx']
-        
-        super().__init__(base_dir=base_dir, file_name=file_name, names=names, usecols=usecols, case_dir=case_dir)
 
 
 class OpenFOAMforces(OpenFOAMpostProcessing):

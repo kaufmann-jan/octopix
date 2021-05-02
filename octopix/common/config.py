@@ -16,6 +16,12 @@ rgb_colors['silver'] = 'rgb(192,192,192)'
 
 
 cfg_data = {
+    
+    'appearance':
+    {
+        'dark_mode':False
+    },
+    
     'canvas': 
     {
         'style': 'dark'
