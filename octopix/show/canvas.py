@@ -4,6 +4,9 @@
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg,NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 
+import matplotlib
+matplotlib.use('Qt5Agg')
+
 from PyQt5.QtWidgets import QVBoxLayout
 
 import numpy as np

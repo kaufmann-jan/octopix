@@ -12,9 +12,6 @@ from octopix.data.scanner import OFppScanner
 from octopix.data.reader import makeRuntimeSelectableReader,prepare_data
 from octopix.data.funcs import getAllListItems,getSelectedListItems,are_equal
 
-import matplotlib
-matplotlib.use('Qt5Agg')
-
 from PyQt5.QtCore import pyqtSlot,QTimer,Qt
 from PyQt5.QtGui import QDoubleValidator,QIcon
 from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox,\
@@ -67,14 +64,6 @@ class Octopix(QMainWindow):
         
         self.config = OctopixConfigurator()
         
-        # --------------
-        # user input and defaults
-        # data type should be selectable by the GUI
-        # by drop down or similar
-        # time start should be optional input from GUI
-        # slider??, or value box
-        # defaults to 0.0
-        
         self.OFscanner = OFppScanner(supported_types=supported_post_types, working_dir=Path.cwd())
         
         self.data_type = None
@@ -82,13 +71,11 @@ class Octopix(QMainWindow):
         self.eval_time_start = 0.0
         dark_mode = False
         self.current_field_selection = {k:[] for k in supported_post_types}
-        #---------------------------
         
         settings_layout = QVBoxLayout()
         
         e1 = QLineEdit()
         e1.setMaximumWidth(100)
-        #e1.setText(str(0.0))
         e1.setValidator(QDoubleValidator())
         e1.textEdited.connect(self.on_read_eval_start_time)
 
