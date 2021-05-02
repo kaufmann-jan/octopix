@@ -12,6 +12,7 @@ from octopix.data.scanner import OFppScanner
 from octopix.data.reader import makeRuntimeSelectableReader,prepare_data
 from octopix.data.funcs import getAllListItems,getSelectedListItems,are_equal
 
+
 from PyQt5.QtCore import pyqtSlot,QTimer,Qt
 from PyQt5.QtGui import QDoubleValidator,QIcon
 from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox,\
@@ -20,7 +21,7 @@ from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox
     QSizePolicy
 
 from octopix.common.config import supported_post_types,default_field_selection
-from octopix.common.config import OctopixConfigurator
+from octopix.common.config import OctopixConfigurator,getBool
 
 
 class Octopix(QMainWindow):
@@ -69,7 +70,7 @@ class Octopix(QMainWindow):
         self.data_type = None
         self.data_subset = []
         self.eval_time_start = 0.0
-        dark_mode = self.config.getboolean('appearance','dark_mode')
+        
         self.current_field_selection = {k:[] for k in supported_post_types}
         
         settings_layout = QVBoxLayout()
@@ -139,9 +140,11 @@ class Octopix(QMainWindow):
         self.statistics_tab.layout.addLayout(hbox)
         self.statistics_tab.setLayout(self.statistics_tab.layout)
         
-        self.auto_update = True
+        auto_update_settings = self.config.getSection('autoupdate')
+        self.auto_update = getBool(auto_update_settings.get('active_on_start','True'))
+        
         self.auto_update_checkBox = QCheckBox("Autoupdate",self)
-        self.auto_update_checkBox.setChecked(True)
+        self.auto_update_checkBox.setChecked(self.auto_update)
         self.auto_update_checkBox.stateChanged.connect(self.on_auto_update_clicked)
         
         reload_button = QPushButton('Reload', self)
@@ -172,7 +175,7 @@ class Octopix(QMainWindow):
 
         self.update()
         
-        if dark_mode:
+        if self.config.getboolean('appearance','dark_mode',fallback=False):
             self.setStyleSheet("background-color:rgb(130, 138, 140);")
             self.output_text_field.setStyleSheet("background-color:rgb(139, 146, 148);")
             self.statistics_text_field.setStyleSheet("background-color:rgb(139, 146, 148);")
@@ -191,9 +194,8 @@ class Octopix(QMainWindow):
         self.timer.setInterval(1000)
         #self.timer.timeout.connect(lambda: self.sc.update_plot(self.data_type,self.eval_time_start))
         self.timer.timeout.connect(self.update)
-        if True:
-            # start the timer on start-up        
-            self.on_auto_update_clicked(Qt.Checked)
+
+        self.on_auto_update_clicked(self.auto_update_checkBox.isChecked())
 
         self.statusBar().showMessage('Ready')
 
@@ -264,13 +266,21 @@ class Octopix(QMainWindow):
 
     def on_auto_update_clicked(self, state):
         """Auto update checkbox
+        
+        Parameter
+        ---------
+        
+        state : Qt.CheckState or bool
+            Qt.Checked,Qt.Unchecked
         """
-        if state == Qt.Checked:
+        if state == Qt.Checked or state:
             self._output('Autoupdate on')
             self.timer.start()
-        else:
+        elif state == Qt.Unchecked or not state:
             self._output('Autoupdate off')
             self.timer.stop()
+        else:
+            raise TypeError
     
 
     @pyqtSlot()

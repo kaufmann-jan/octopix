@@ -3,6 +3,9 @@
 
 from configparser import ConfigParser
 
+#import distutils
+from distutils import util
+
 from pathlib import Path
 import os
 
@@ -34,6 +37,8 @@ cfg_data = {
     
 }
 
+def getBool(s):
+    return bool(util.strtobool(s))
 
 class OctopixConfigurator(ConfigParser):
     
