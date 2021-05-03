@@ -244,14 +244,14 @@ class Octopix(QMainWindow):
     def on_reload_data(self):
         """Reload data push button
         """
-        self._output('Reloading data')
+        self.console.sendToOutput('Reloading data')
         self.update()
 
     def on_read_eval_start_time(self,text):
         try:
             self.eval_time_start = float(text)
         except:
-            self._output('ups')
+            self.console.sendToOutput('ups')
         
         self.update()
             
