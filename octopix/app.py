@@ -66,9 +66,10 @@ class Octopix(QMainWindow):
         
         self.data_type = None
         self.data_subset = []
-        self.eval_time_start = 0.0
+        #self.eval_time_start = 0.0
         
         self.current_field_selection = {k:[] for k in supported_post_types}
+        self.tmin = {k:0.0 for k in supported_post_types}
         
         settings_layout = QVBoxLayout()
         
@@ -190,7 +191,7 @@ class Octopix(QMainWindow):
         # data_type defines the reader
         reader = makeRuntimeSelectableReader(reader_name=self.data_type,file_name=data_name)
         fields = reader.fields()
-        df = prepare_data(reader.data,self.eval_time_start,self.data_subset)
+        df = prepare_data(reader.data,self.tmin[self.data_type],self.data_subset)
 
         self.canvas_layout.mplCanvas.update_plot(df,self.data_type,data_name)
         
@@ -213,12 +214,9 @@ class Octopix(QMainWindow):
         
         self.data_subset = getSelectedListItems(self.fieldlist)
         
-        try:
-            des = df.describe().T.loc[:,['mean','min','max','std']]
-        except:
-            des = pd.DataFrame()
+        self.console.statistics_text_field.setPlainText(df)
         
-        self.console.statistics_text_field.setPlainText(str(des))
+        
 
 
     def on_auto_update_clicked(self, state):
@@ -244,14 +242,14 @@ class Octopix(QMainWindow):
     def on_reload_data(self):
         """Reload data push button
         """
-        self._output('Reloading data')
+        self.console.sendToOutput('Reloading data')
         self.update()
 
     def on_read_eval_start_time(self,text):
         try:
-            self.eval_time_start = float(text)
+            self.tmin[self.data_type] = float(text)
         except:
-            self._output('ups')
+            self.console.sendToOutput('ups')
         
         self.update()
             
@@ -265,7 +263,9 @@ class Octopix(QMainWindow):
             self.filelist.setCurrentRow(0)
             
             self.data_subset = []
-                            
+            
+            self.tmin_textfield.setText("{:g}".format(self.tmin[self.data_type]))
+                   
             self.update()
             
         except IndexError:

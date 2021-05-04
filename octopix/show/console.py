@@ -2,9 +2,35 @@
 # -*- coding: utf-8 -*-
 
 from datetime import datetime
+from pathlib import Path
 
 from PyQt5.QtWidgets import QWidget,QTabWidget,QPlainTextEdit,QVBoxLayout,QHBoxLayout,QPushButton,QFileDialog
 from PyQt5.QtGui import QIcon
+
+import pandas as pd
+
+class StatisticsTextField(QPlainTextEdit):
+    
+    def __init___(self,*args,**kwargs):
+        
+        super(StatisticsTextField,self).__init__(*args,**kwargs)
+        
+        self.setReadOnly(True)
+        self.setStyleSheet("background-color:lightgray")
+        
+        self.df = pd.DataFrame()
+
+    def setPlainText(self, df):
+        
+        self.df = df
+
+        try:
+            self.df = df.describe().T.loc[:,['count','mean','min','max','std']]
+        except:
+            self.df = pd.DataFrame()
+
+        QPlainTextEdit.setPlainText(self,str(self.df))
+
 
 
 class Console(QTabWidget):
@@ -29,9 +55,7 @@ class Console(QTabWidget):
         self.output_tab.layout.addWidget(self.output_text_field)
         self.output_tab.setLayout(self.output_tab.layout)
         
-        self.statistics_text_field = QPlainTextEdit()
-        self.statistics_text_field.setReadOnly(True)
-        self.statistics_text_field.setStyleSheet("background-color:lightgray")
+        self.statistics_text_field = StatisticsTextField()
           
         self.statistics_tab.layout = QVBoxLayout()
         self.statistics_tab.layout.addWidget(self.statistics_text_field)
@@ -53,13 +77,18 @@ class Console(QTabWidget):
         
         # from:
         # https://pythonspot.com/pyqt5-file-dialog/
+        # with more understandable option handling 
         
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()","","All Files (*);;Text Files (*.txt)", options=options)
+        fileName, fileType = QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()","","CSV Files (*.csv);;Text Files (*.txt);;All Files (*)"
+                                                 ,options=QFileDialog.DontUseNativeDialog)
         if fileName:
-            with open(fileName,'w') as f:
-                f.write(self.statistics_text_field.toPlainText())
+            if "(*.csv)" in fileType:
+                if Path(fileName).suffix != '.csv':
+                    fileName += '.csv'
+                self.statistics_text_field.df.to_csv(fileName,index=True)
+            else:
+                with open(fileName,'w') as f:
+                    f.write(self.statistics_text_field.toPlainText())
         
         
     def on_click_exportButton(self):
