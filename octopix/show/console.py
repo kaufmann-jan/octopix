@@ -86,23 +86,6 @@ class Console(QTabWidget):
         
         self.statistics_tab.setLayout(self.statistics_tab.layout)
     
-    
-    def export_stats(self):
-        
-        # from:
-        # https://pythonspot.com/pyqt5-file-dialog/
-        # with more understandable option handling 
-        
-        fileName, fileType = QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()","","CSV Files (*.csv);;Text Files (*.txt);;All Files (*)"
-                                                 ,options=QFileDialog.DontUseNativeDialog)
-        if fileName:
-            if "(*.csv)" in fileType:
-                if Path(fileName).suffix != '.csv':
-                    fileName += '.csv'
-                self.statistics_text_field.df.to_csv(fileName,index=True)
-            else:
-                with open(fileName,'w') as f:
-                    f.write(self.statistics_text_field.toPlainText())
                 
     def on_click_exportButton(self):
         
