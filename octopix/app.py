@@ -19,7 +19,7 @@ from PyQt5.QtCore import pyqtSlot,QTimer,Qt
 from PyQt5.QtGui import QDoubleValidator,QIcon
 from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox,\
     QLabel,QLineEdit,QPushButton,QListWidget,QVBoxLayout,QHBoxLayout,QFormLayout,\
-    QGridLayout,QAction,qApp,QAbstractItemView,QSpacerItem,QSizePolicy
+    QGridLayout,QAction,qApp,QAbstractItemView,QSpacerItem,QSizePolicy,QGroupBox
 
 class Octopix(QMainWindow):
 
@@ -112,31 +112,49 @@ class Octopix(QMainWindow):
         # the tabs        
         self.console = Console()
         
-        self.auto_update_checkBox = QCheckBox("Autoupdate",self)
-        self.auto_update_checkBox.setChecked(self.config.getboolean('autoupdate','active_on_start'))
-        self.auto_update_checkBox.stateChanged.connect(self.on_auto_update_clicked)
+        # the canvas 
+        self.canvas_layout = CanvasLayout(self.config['canvas'])
         
+        # the control  
+        auto_update_checkBox = QCheckBox("Autoupdate",self)
+        auto_update_checkBox.setChecked(self.config.getboolean('autoupdate','active_on_start'))
+        auto_update_checkBox.stateChanged.connect(self.on_auto_update_clicked)
+        
+        autoupdate_interval = QLineEdit()
+        autoupdate_interval.setMaximumWidth(100)
+        autoupdate_interval.setValidator(QDoubleValidator(0.1,1000.,2))
+        autoupdate_interval.setText("1.0")  
+        autoupdate_interval.textEdited.connect(self.on_read_autoupdate_interval)
+                
         reload_button = QPushButton('Reload', self)
         reload_button.setToolTip('Reload the data')
+        reload_button.setMaximumWidth(100)
         reload_button.clicked.connect(self.on_reload_data)
-        
-        hbox = QHBoxLayout()
-        hbox.addWidget(self.auto_update_checkBox)
-        hbox.addStretch(1)
-        hbox.addWidget(reload_button)
-        
-        settings_layout.addLayout(hbox)   
-         
-        self.canvas_layout = CanvasLayout(self.config['canvas'])
 
+        vvbox = QVBoxLayout()
+        vvbox.addStretch(1)
+
+        gb = QGroupBox("Control")
+        gb.setCheckable(False)
+        vbox = QVBoxLayout()
+        gb.setLayout(vbox)
+        vbox.addWidget(auto_update_checkBox)
+        vbox.addWidget(QLabel("Interval:"))
+        vbox.addWidget(autoupdate_interval)
+        vbox.addWidget(reload_button)
+
+        vvbox.addWidget(gb)
+         
         outer_layout = QGridLayout()
         outer_layout.addLayout(settings_layout,0,0,3,1)
-        outer_layout.addLayout(self.canvas_layout,0,2)
-        outer_layout.addWidget(self.console,2,2)
+        
+        outer_layout.addLayout(vvbox,1,0)
+        outer_layout.addLayout(self.canvas_layout,0,1)
+        outer_layout.addWidget(self.console,1,1)
         outer_layout.setColumnStretch(0,0)
-        outer_layout.setColumnStretch(2,2)
-        outer_layout.setRowStretch(0,2)
-        outer_layout.setRowStretch(2,1)
+        outer_layout.setColumnStretch(1,1)
+        outer_layout.setRowStretch(0,1)
+        outer_layout.setRowStretch(1,1)
 
         widget = QWidget()
         widget.setLayout(outer_layout)
@@ -157,13 +175,13 @@ class Octopix(QMainWindow):
         else:
             self.canvas_layout.mplCanvas.savePlot()
             sys.exit(0)
-            
         
         # Timer to trigger the reloading and redrawing by calling te update function.
         self.timer = QTimer()
-        self.timer.setInterval(1000)
+        #self.timer.setInterval(1000)
+        self.on_read_autoupdate_interval(autoupdate_interval.text())
         self.timer.timeout.connect(self.update)
-        self.on_auto_update_clicked(self.auto_update_checkBox.isChecked())
+        self.on_auto_update_clicked(auto_update_checkBox.isChecked())
 
 
     def update(self):
@@ -256,7 +274,13 @@ class Octopix(QMainWindow):
             self.console.sendToOutput('ups')
         
         self.update()
-            
+    
+    def on_read_autoupdate_interval(self,text):
+        try:
+            self.timer.setInterval(int(float(text)*1000))
+        except:
+            self.console.sendToOutput('ups')        
+    
     def on_datatype_selection_changed(self,i):
         
         try:
