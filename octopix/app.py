@@ -191,7 +191,11 @@ class Octopix(QMainWindow):
         # data_type defines the reader
         reader = makeRuntimeSelectableReader(reader_name=self.data_type,file_name=data_name)
         fields = reader.fields()
-        df = prepare_data(reader.data,self.tmin[self.data_type],self.data_subset)
+        
+        if self.OFscanner.ppObjects:
+            df = prepare_data(reader.data,self.tmin[self.data_type],self.data_subset)
+        else:
+            df = pd.DataFrame()
 
         self.canvas_layout.mplCanvas.update_plot(df,self.data_type,data_name)
         

@@ -53,6 +53,20 @@ class Console(QTabWidget):
         
         self.output_tab.layout = QVBoxLayout()
         self.output_tab.layout.addWidget(self.output_text_field)
+        
+        textClearButton = QPushButton('Clear')
+        textClearButton.clicked.connect(self.on_click_clearTextButton)
+        
+        textExportButton = QPushButton('Export')
+        textExportButton.clicked.connect(self.on_click_exportTextButton)
+        
+        hbox = QHBoxLayout()
+        hbox.addStretch(1)
+        hbox.addWidget(textClearButton)
+        hbox.addWidget(textExportButton)
+        
+        self.output_tab.layout.addLayout(hbox)
+        
         self.output_tab.setLayout(self.output_tab.layout)
         
         self.statistics_text_field = StatisticsTextField()
@@ -89,11 +103,21 @@ class Console(QTabWidget):
             else:
                 with open(fileName,'w') as f:
                     f.write(self.statistics_text_field.toPlainText())
-        
-        
+                
     def on_click_exportButton(self):
+        
         self.sendToOutput('exporting stats data')
-        self.export_stats()
+        
+        fileName, fileType = QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()","","CSV Files (*.csv);;Text Files (*.txt);;All Files (*)"
+                                                 ,options=QFileDialog.DontUseNativeDialog)
+        if fileName:
+            if "(*.csv)" in fileType:
+                if Path(fileName).suffix != '.csv':
+                    fileName += '.csv'
+                self.statistics_text_field.df.to_csv(fileName,index=True)
+            else:
+                with open(fileName,'w') as f:
+                    f.write(self.statistics_text_field.toPlainText())
     
     def sendToOutput(self,text):
         
@@ -102,6 +126,18 @@ class Console(QTabWidget):
         
         self.output_text_field.appendPlainText(txt)
         
+    def on_click_exportTextButton(self):
         
+        self.sendToOutput('exporting text data')
+        
+        fileName, _ = QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()","","All Files (*);;Text Files (*.txt)"
+                                                 ,options=QFileDialog.DontUseNativeDialog)
+        if fileName:
+            with open(fileName,'w') as f:
+                f.write(self.output_text_field.toPlainText())        
+    
+    def on_click_clearTextButton(self):
+        
+        self.output_text_field.clear()
         
         
