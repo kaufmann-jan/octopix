@@ -4,10 +4,65 @@
 from datetime import datetime
 from pathlib import Path
 
-from PyQt5.QtWidgets import QWidget,QTabWidget,QPlainTextEdit,QVBoxLayout,QHBoxLayout,QPushButton,QFileDialog
-from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QWidget,QTabWidget,QPlainTextEdit,QVBoxLayout,QHBoxLayout,QPushButton,QFileDialog,\
+    QTableView
+from PyQt5.QtCore import QAbstractTableModel, Qt
+
 
 import pandas as pd
+
+class OctopixTableView(QTableView):
+    
+    def stats(self,data):
+        try:
+            df = data.describe().T.loc[:,['count','mean','min','max','std']]
+        except:
+            df = pd.DataFrame()
+        
+        return df
+    
+    def __init__(self,data=pd.DataFrame(),*args,**kwargs):
+        
+        super(OctopixTableView,self).__init__(*args,**kwargs)
+        
+        self.setModel(PandasModel(self.stats(data)))
+        #[self.setColumnWidth(col,100) for col in range(len(data.columns))]
+        
+        
+    def update(self,data, *args, **kwargs):
+        
+        self.setModel(PandasModel(self.stats(data)))
+
+        return QTableView.update(self, *args, **kwargs)
+
+
+
+class PandasModel(QAbstractTableModel):
+
+    def __init__(self, data=pd.DataFrame()):
+        QAbstractTableModel.__init__(self)
+        self._data = data
+
+    def rowCount(self, parent=None):
+        return self._data.shape[0]
+
+    def columnCount(self, parnet=None):
+        return self._data.shape[1]
+
+    def data(self, index, role=Qt.DisplayRole):
+        if index.isValid():
+            if role == Qt.DisplayRole:
+                return "{0:.4g}".format(self._data.iloc[index.row(), index.column()])
+        return None
+
+    def headerData(self, col, orientation, role):
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return self._data.columns[col]
+        if orientation == Qt.Vertical and role == Qt.DisplayRole:
+            return self._data.index[col]
+        return None
+
+
 
 class StatisticsTextField(QPlainTextEdit):
     
@@ -30,7 +85,8 @@ class StatisticsTextField(QPlainTextEdit):
             self.df = pd.DataFrame()
 
         QPlainTextEdit.setPlainText(self,str(self.df))
-
+        
+        
 
 
 class Console(QTabWidget):
@@ -42,10 +98,12 @@ class Console(QTabWidget):
         #self.tabs = QTabWidget(self)
         self.output_tab = QWidget()
         self.statistics_tab = QWidget()
+        self.table_tab = QWidget()
         
         # Add tabs
         self.addTab(self.statistics_tab,"Statistics") 
         self.addTab(self.output_tab,"Output")
+        #self.addTab(self.table_tab, "PANDAS")
          
         self.output_text_field = QPlainTextEdit()
         self.output_text_field.setReadOnly(True)
@@ -66,7 +124,6 @@ class Console(QTabWidget):
         hbox.addWidget(textExportButton)
         
         self.output_tab.layout.addLayout(hbox)
-        
         self.output_tab.setLayout(self.output_tab.layout)
         
         self.statistics_text_field = StatisticsTextField()
@@ -83,8 +140,17 @@ class Console(QTabWidget):
         hbox.addWidget(exportButton)
         
         self.statistics_tab.layout.addLayout(hbox)
-        
         self.statistics_tab.setLayout(self.statistics_tab.layout)
+        
+        dummy = pd.DataFrame(data={'foo':[],'bar':[],'baz':[]})
+        
+        self.view = OctopixTableView(dummy)
+        self.addTab(self.view,"PANDAS")
+        
+        
+    
+    def update(self,data):
+        self.view.update(data)
     
                 
     def on_click_exportButton(self):

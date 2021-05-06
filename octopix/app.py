@@ -237,6 +237,7 @@ class Octopix(QMainWindow):
         self.data_subset = getSelectedListItems(self.fieldlist)
         
         self.console.statistics_text_field.setPlainText(df)
+        self.console.update(df)
         
         
 
