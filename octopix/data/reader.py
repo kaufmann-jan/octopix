@@ -94,9 +94,9 @@ class OpenFOAMpostProcessing(object):
             print(e)
 
     def fields(self):
-        fields = list(self.data.columns)
-        fields.remove('time')
-        return fields
+        f = list(self.data.columns)
+        f.remove('time')
+        return f
     
     def __str__(self):
         return str(self.data.head())

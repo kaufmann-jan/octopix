@@ -66,12 +66,11 @@ class Octopix(QMainWindow):
         
         self.data_type = None
         self.data_subset = []
-        #self.eval_time_start = 0.0
         
         self.current_field_selection = {k:[] for k in supported_post_types}
         self.tmin = {k:0.0 for k in supported_post_types}
         
-        settings_layout = QVBoxLayout()
+#         settings_layout = QVBoxLayout()
         
         self.tmin_textfield = QLineEdit()
         self.tmin_textfield.setMaximumWidth(100)
@@ -82,7 +81,7 @@ class Octopix(QMainWindow):
         self.datatype_comboBox.setMaximumWidth(100)
         self.datatype_comboBox.currentIndexChanged.connect(self.on_datatype_selection_changed)
 
-        flo = QFormLayout()
+        #flo = QFormLayout()
         
         #flo.addRow(QLabel("Tmin:"), self.tmin_textfield)
         #flo.addRow(QLabel("Data type:"),self.datatype_comboBox)
@@ -102,12 +101,12 @@ class Octopix(QMainWindow):
         self.fieldlist.setMaximumSize(150,120)
         self.fieldlist.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.fieldlist.itemSelectionChanged.connect(self.on_fieldlist_selection_changed)              
-        
-        settings_layout.addWidget(QLabel('Files:'))
-        settings_layout.addWidget(self.filelist)
-        settings_layout.addWidget(QLabel('Fields:'))
-        settings_layout.addWidget(self.fieldlist)
-        settings_layout.addStretch(1)
+#         
+#         settings_layout.addWidget(QLabel('Files:'))
+#         settings_layout.addWidget(self.filelist)
+#         settings_layout.addWidget(QLabel('Fields:'))
+#         settings_layout.addWidget(self.fieldlist)
+#         settings_layout.addStretch(1)
 
         
         dataBox = QGroupBox("Data ")
