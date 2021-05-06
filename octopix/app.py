@@ -160,7 +160,7 @@ class Octopix(QMainWindow):
         outer_layout = QGridLayout()
         #outer_layout.addLayout(settings_layout,0,0,3,1)
         outer_layout.addWidget(dataBox,0,0)
-        outer_layout.addWidget(gb,2,0,Qt.AlignBottom)
+        outer_layout.addWidget(gb,1,0,Qt.AlignTop)
         
         outer_layout.addLayout(self.canvas_layout,0,1,2,1)
         outer_layout.addWidget(self.console,2,1)
