@@ -148,9 +148,9 @@ class Octopix(QMainWindow):
         outer_layout = QGridLayout()
         outer_layout.addLayout(settings_layout,0,0,3,1)
         
-        outer_layout.addLayout(vvbox,1,0)
-        outer_layout.addLayout(self.canvas_layout,0,1)
-        outer_layout.addWidget(self.console,1,1)
+        outer_layout.addLayout(vvbox,2,0)
+        outer_layout.addLayout(self.canvas_layout,0,1,2,1)
+        outer_layout.addWidget(self.console,2,1)
         outer_layout.setColumnStretch(0,0)
         outer_layout.setColumnStretch(1,1)
         outer_layout.setRowStretch(0,1)
@@ -236,7 +236,7 @@ class Octopix(QMainWindow):
         
         self.data_subset = getSelectedListItems(self.fieldlist)
         
-        self.console.statistics_text_field.setPlainText(df)
+        #self.console.statistics_text_field.setText(df)
         self.console.update(df)
         
         
@@ -290,8 +290,6 @@ class Octopix(QMainWindow):
             self.filelist.clear()
             self.filelist.addItems(self.OFscanner.ppObjects[self.data_type])
             self.filelist.setCurrentRow(0)
-            
-            self.data_subset = []
             
             self.tmin_textfield.setText("{:g}".format(self.tmin[self.data_type]))
                    

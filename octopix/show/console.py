@@ -3,68 +3,108 @@
 
 from datetime import datetime
 from pathlib import Path
+import io
+import csv
 
 from PyQt5.QtWidgets import QWidget,QTabWidget,QPlainTextEdit,QVBoxLayout,QHBoxLayout,QPushButton,QFileDialog,\
-    QTableView
-from PyQt5.QtCore import QAbstractTableModel, Qt
-
+    QTableView,qApp,QTextEdit
+from PyQt5.QtCore import QAbstractTableModel, Qt,QEvent
+from PyQt5.QtGui import QKeySequence
 
 import pandas as pd
 
 class OctopixTableView(QTableView):
     
-    def stats(self,data):
+    def stats(self):
         try:
-            df = data.describe().T.loc[:,['count','mean','min','max','std']]
+            des = self.df.describe().T.loc[:,['count','mean','min','max','std']]
         except:
-            df = pd.DataFrame()
+            des = pd.DataFrame()
         
-        return df
+        return des
     
     def __init__(self,data=pd.DataFrame(),*args,**kwargs):
         
         super(OctopixTableView,self).__init__(*args,**kwargs)
         
-        self.setModel(PandasModel(self.stats(data)))
-        #[self.setColumnWidth(col,100) for col in range(len(data.columns))]
+        self.setData(data)
+        
+        self.installEventFilter(self)
         
         
     def update(self,data, *args, **kwargs):
         
-        self.setModel(PandasModel(self.stats(data)))
+        self.setData(data)
 
         return QTableView.update(self, *args, **kwargs)
 
+    def setData(self,data):
+        
+        self.df = data
+        
+        self.setModel(PandasModel(self.stats()))
+        
+    def eventFilter(self, source, event):
+        if (event.type() == QEvent.KeyPress and
+            event.matches(QKeySequence.Copy)):
+            self.copySelection()
+            return True
+        return super().eventFilter(source, event)
 
+    def copySelection(self):
+            selection = self.selectedIndexes()
+            if selection:
+                rows = sorted(index.row() for index in selection)
+                columns = sorted(index.column() for index in selection)
+                rowcount = rows[-1] - rows[0] + 1
+                colcount = columns[-1] - columns[0] + 1
+                table = [[''] * colcount for _ in range(rowcount)]
+                for index in selection:
+                    row = index.row() - rows[0]
+                    column = index.column() - columns[0]
+                    table[row][column] = index.data()
+                stream = io.StringIO()
+                csv.writer(stream).writerows(table)
+                qApp.clipboard().setText(stream.getvalue())  
 
 class PandasModel(QAbstractTableModel):
 
     def __init__(self, data=pd.DataFrame()):
+        
         QAbstractTableModel.__init__(self)
+        
         self._data = data
 
     def rowCount(self, parent=None):
+        
         return self._data.shape[0]
 
     def columnCount(self, parnet=None):
+        
         return self._data.shape[1]
 
     def data(self, index, role=Qt.DisplayRole):
+        
         if index.isValid():
             if role == Qt.DisplayRole:
-                return "{0:.4g}".format(self._data.iloc[index.row(), index.column()])
+                return "{0:g}".format(self._data.iloc[index.row(), index.column()])
+            
         return None
 
     def headerData(self, col, orientation, role):
-        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            return self._data.columns[col]
-        if orientation == Qt.Vertical and role == Qt.DisplayRole:
-            return self._data.index[col]
-        return None
+        
+        try:
+            if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+                return self._data.columns[col]
+            if orientation == Qt.Vertical and role == Qt.DisplayRole:
+                return self._data.index[col]
+            return None
+        
+        except IndexError as e:
+            pass
 
 
-
-class StatisticsTextField(QPlainTextEdit):
+class StatisticsTextField(QTextEdit):
     
     def __init___(self,*args,**kwargs):
         
@@ -75,7 +115,7 @@ class StatisticsTextField(QPlainTextEdit):
         
         self.df = pd.DataFrame()
 
-    def setPlainText(self, df):
+    def setText(self, df):
         
         self.df = df
 
@@ -84,8 +124,12 @@ class StatisticsTextField(QPlainTextEdit):
         except:
             self.df = pd.DataFrame()
 
-        QPlainTextEdit.setPlainText(self,str(self.df))
-        
+        #tablefmt = "plain" #"simple"
+        #stream = io.StringIO()
+        #self.df.to_markdown(stream,tablefmt=tablefmt)
+        #QPlainTextEdit.setPlainText(self,stream.getvalue())
+        #QTextEdit.setText(self,self.df.to_markdown())
+        QTextEdit.setHtml(self,self.df.to_html(float_format=lambda x: '%8.4g' % x,border=0))
         
 
 
@@ -95,15 +139,12 @@ class Console(QTabWidget):
         
         super(Console,self).__init__(*args,**kwargs)
         
-        #self.tabs = QTabWidget(self)
         self.output_tab = QWidget()
-        self.statistics_tab = QWidget()
         self.table_tab = QWidget()
         
         # Add tabs
-        self.addTab(self.statistics_tab,"Statistics") 
+        self.addTab(self.table_tab, "Table")
         self.addTab(self.output_tab,"Output")
-        #self.addTab(self.table_tab, "PANDAS")
          
         self.output_text_field = QPlainTextEdit()
         self.output_text_field.setReadOnly(True)
@@ -126,11 +167,6 @@ class Console(QTabWidget):
         self.output_tab.layout.addLayout(hbox)
         self.output_tab.setLayout(self.output_tab.layout)
         
-        self.statistics_text_field = StatisticsTextField()
-          
-        self.statistics_tab.layout = QVBoxLayout()
-        self.statistics_tab.layout.addWidget(self.statistics_text_field)
-        
         exportButton = QPushButton('Export')
         exportButton.setToolTip('Reload the data')
         exportButton.clicked.connect(self.on_click_exportButton)
@@ -138,16 +174,14 @@ class Console(QTabWidget):
         hbox = QHBoxLayout()
         hbox.addStretch(1)
         hbox.addWidget(exportButton)
+               
+        self.view = OctopixTableView()
         
-        self.statistics_tab.layout.addLayout(hbox)
-        self.statistics_tab.setLayout(self.statistics_tab.layout)
-        
-        dummy = pd.DataFrame(data={'foo':[],'bar':[],'baz':[]})
-        
-        self.view = OctopixTableView(dummy)
-        self.addTab(self.view,"PANDAS")
-        
-        
+        self.table_tab.layout = QVBoxLayout()
+        self.table_tab.layout.addWidget(self.view)
+        self.table_tab.layout.addLayout(hbox)
+        self.table_tab.setLayout(self.table_tab.layout)
+                
     
     def update(self,data):
         self.view.update(data)
@@ -163,14 +197,15 @@ class Console(QTabWidget):
             if "(*.csv)" in fileType:
                 if Path(fileName).suffix != '.csv':
                     fileName += '.csv'
-                self.statistics_text_field.df.to_csv(fileName,index=True)
+                self.view.stats().to_csv(fileName,index=True)
             else:
                 with open(fileName,'w') as f:
-                    f.write(self.statistics_text_field.toPlainText())
+                    f.write(self.view.stats().to_string())
     
     def sendToOutput(self,text):
         
         now = datetime.now().strftime("%H:%M:%S")
+        
         txt = "{0:}: {1:}".format(now,text)
         
         self.output_text_field.appendPlainText(txt)
