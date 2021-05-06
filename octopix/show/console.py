@@ -52,6 +52,9 @@ class OctopixTableView(QTableView):
         return super().eventFilter(source, event)
 
     def copySelection(self):
+        """header and index are not copied. 
+        how to extend to allow for right click on selection?
+        """
             selection = self.selectedIndexes()
             if selection:
                 rows = sorted(index.row() for index in selection)
