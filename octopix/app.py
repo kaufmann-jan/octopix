@@ -84,12 +84,12 @@ class Octopix(QMainWindow):
 
         flo = QFormLayout()
         
-        flo.addRow(QLabel("Tmin:"), self.tmin_textfield)
-        flo.addRow(QLabel("Data type:"),self.datatype_comboBox)
+        #flo.addRow(QLabel("Tmin:"), self.tmin_textfield)
+        #flo.addRow(QLabel("Data type:"),self.datatype_comboBox)
 
-        verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        settings_layout.addItem(verticalSpacer)        
-        settings_layout.addLayout(flo)
+        #verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        #settings_layout.addItem(verticalSpacer)        
+        #settings_layout.addLayout(flo)
         
         self.filelist = QListWidget()
         self.filelist.setAlternatingRowColors(True)
@@ -108,6 +108,21 @@ class Octopix(QMainWindow):
         settings_layout.addWidget(QLabel('Fields:'))
         settings_layout.addWidget(self.fieldlist)
         settings_layout.addStretch(1)
+
+        
+        dataBox = QGroupBox("Data ")
+        dataBox.setCheckable(False)
+        vbox = QVBoxLayout()
+        dataBox.setLayout(vbox)
+        vbox.addWidget(QLabel("Tmin:"))
+        vbox.addWidget(self.tmin_textfield)
+        vbox.addWidget(QLabel("Data type:"))
+        vbox.addWidget(self.datatype_comboBox)
+        vbox.addWidget(QLabel('Files:'))
+        vbox.addWidget(self.filelist)
+        vbox.addWidget(QLabel('Fields:'))
+        vbox.addWidget(self.fieldlist)
+        vbox.addStretch(1)
 
         # the tabs        
         self.console = Console()
@@ -131,11 +146,9 @@ class Octopix(QMainWindow):
         reload_button.setMaximumWidth(100)
         reload_button.clicked.connect(self.on_reload_data)
 
-        vvbox = QVBoxLayout()
-        vvbox.addStretch(1)
-
         gb = QGroupBox("Control")
         gb.setCheckable(False)
+        #gb.setMaximumHeight(150)
         vbox = QVBoxLayout()
         gb.setLayout(vbox)
         vbox.addWidget(auto_update_checkBox)
@@ -143,12 +156,12 @@ class Octopix(QMainWindow):
         vbox.addWidget(autoupdate_interval)
         vbox.addWidget(reload_button)
 
-        vvbox.addWidget(gb)
          
         outer_layout = QGridLayout()
-        outer_layout.addLayout(settings_layout,0,0,3,1)
+        #outer_layout.addLayout(settings_layout,0,0,3,1)
+        outer_layout.addWidget(dataBox,0,0)
+        outer_layout.addWidget(gb,2,0,Qt.AlignBottom)
         
-        outer_layout.addLayout(vvbox,2,0)
         outer_layout.addLayout(self.canvas_layout,0,1,2,1)
         outer_layout.addWidget(self.console,2,1)
         outer_layout.setColumnStretch(0,0)
