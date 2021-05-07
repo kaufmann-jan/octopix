@@ -15,7 +15,7 @@ from octopix.common.config import supported_post_types,default_field_selection
 from octopix.common.config import OctopixConfigurator
 
 from PyQt5.QtCore import pyqtSlot,QTimer,Qt
-from PyQt5.QtGui import QDoubleValidator,QIcon
+from PyQt5.QtGui import QDoubleValidator,QIcon,QPixmap
 from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox,\
     QLabel,QLineEdit,QPushButton,QListWidget,QVBoxLayout,QHBoxLayout,QFormLayout,\
     QGridLayout,QAction,qApp,QAbstractItemView,QSpacerItem,QSizePolicy,QGroupBox,QFileDialog
@@ -163,10 +163,13 @@ class Octopix(QMainWindow):
         gb.setLayout(gb.layout)
 
         controls_layout = QVBoxLayout()
-        #controls_layout.
         controls_layout.addWidget(dataBox)
         controls_layout.addWidget(gb)
         controls_layout.addStretch(1)
+
+        octoLabel = QLabel(self)
+        octoLabel.setPixmap(QPixmap('octo_croped.png').scaled(120,120,Qt.KeepAspectRatio))
+        controls_layout.addWidget(octoLabel)
          
         outer_layout = QGridLayout()
         outer_layout.addLayout(controls_layout,0,0,3,1,Qt.AlignTop)
@@ -268,7 +271,7 @@ class Octopix(QMainWindow):
         
         folderpath = QFileDialog.getExistingDirectory(self, 'Select postProcessing Folder',options=QFileDialog.DontUseNativeDialog)
         
-        self.console.sendToOutput('Opening {0:}'.format(folderpath))
+        self.console.sendToOutput('Loading data from: {0:}'.format(folderpath))
 
         self.wDir = Path(folderpath).parent
         

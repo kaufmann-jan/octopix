@@ -196,8 +196,6 @@ class Console(QTabWidget):
                 
     def on_click_exportButton(self):
         
-        self.sendToOutput('exporting stats data')
-        
         fileName, fileType = QFileDialog.getSaveFileName(self,"Exporting the statistics data","","CSV Files (*.csv);;Text Files (*.txt);;All Files (*)"
                                                  ,options=QFileDialog.DontUseNativeDialog)
         if fileName:
@@ -208,6 +206,8 @@ class Console(QTabWidget):
             else:
                 with open(fileName,'w') as f:
                     f.write(self.view.stats().to_string())
+                    
+            self.sendToOutput('exporting stats data')
     
     def sendToOutput(self,text):
         
