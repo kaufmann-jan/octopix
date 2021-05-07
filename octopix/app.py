@@ -3,7 +3,6 @@
 
 import sys
 from pathlib import Path
-from datetime import datetime
 
 import pandas as pd
 
@@ -23,50 +22,68 @@ from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox
 
 class Octopix(QMainWindow):
 
-    def printMoep(self):
-        print('mööööp')
 
     def initMenubar(self):
+        
+        menubar = self.menuBar()
         
         exitAct = QAction(QIcon('exit.png'), '&Exit', self)
         exitAct.setShortcut('Ctrl+Q')
         exitAct.setStatusTip('Exit application')
         exitAct.triggered.connect(qApp.quit)
                 
-        menubar = self.menuBar()
+        openAct = QAction(QIcon('open.png'), '&Open', self)
+        openAct.setShortcut('Ctrl+O')
+        openAct.setStatusTip('Open postProcessing')
+        openAct.triggered.connect(self.on_clicked_openPP)
+        
+        exportAct = QAction(QIcon('export.png'), '&Export', self)
+        exportAct.setShortcut('Ctrl+E')
+        exportAct.setStatusTip('export statistics data')
+        exportAct.triggered.connect(self.console.on_click_exportButton)
         
         fileMenu = menubar.addMenu('&File')
         fileMenu.addAction(exitAct)
-        
-        setStyle = QAction('möp', self)
-        setStyle.setShortcut('Ctrl+M')
-        setStyle.setStatusTip('print möööp to the console')
-        #setStyle.triggered.connect(self.printMoep)
-        setStyle.triggered.connect(lambda: print('mööööööööööp'))
+        fileMenu.addAction(openAct)
+        fileMenu.addAction(exportAct)
         
         appearanceMenu = menubar.addMenu('&Appearance')
-        appearanceMenu.addAction(setStyle)
+        plotStyleMenu = appearanceMenu.addMenu('Plot Stlye')
+        
+        selectDarkStyleAct = QAction('dark',self)
+        selectDarkStyleAct.triggered.connect(lambda: self.setPlotStyle('dark'))
+        selectBrightStyleAct = QAction('bright',self)
+        selectBrightStyleAct.triggered.connect(lambda: self.setPlotStyle('bright'))
+        selectClassicStyleAct = QAction('classic',self)
+        selectClassicStyleAct.triggered.connect(lambda: self.setPlotStyle('classic'))        
+
+        plotStyleMenu.addAction(selectDarkStyleAct)
+        plotStyleMenu.addAction(selectBrightStyleAct)
+        plotStyleMenu.addAction(selectClassicStyleAct)
         
         
+    def setPlotStyle(self,style):
+        
+        self.canvas_layout.mplCanvas.style = style 
+        self.update()
+    
 
     def __init__(self, show_gui, *args, **kwargs):
         super(Octopix, self).__init__(*args, **kwargs)
 
         self.setWindowTitle("Octopix - Visualize your Simulation Progress")
-        
-        self.initMenubar()
 
         self.statusBar()
         
-        self.setGeometry(140, 140, 1150, 900)
+        self.setGeometry(140, 140, 1250, 1000)
         
         self.config = OctopixConfigurator()
         
         self.wDir = Path.cwd()
-        self.OFscanner = OFppScanner(supported_types=supported_post_types, working_dir=self.wDir)
-        
         self.data_type = None
         self.data_subset = []
+        
+        self.OFscanner = OFppScanner(supported_types=supported_post_types, working_dir=self.wDir)
         
         self.current_field_selection = {k:[] for k in supported_post_types}
         self.tmin = {k:0.0 for k in supported_post_types}
@@ -77,7 +94,7 @@ class Octopix(QMainWindow):
         self.tmin_textfield.textEdited.connect(self.on_read_eval_start_time)
 
         self.datatype_comboBox = QComboBox()
-        self.datatype_comboBox.setMaximumWidth(100)
+        self.datatype_comboBox.setMaximumWidth(120)
         self.datatype_comboBox.currentIndexChanged.connect(self.on_datatype_selection_changed)
         
         self.filelist = QListWidget()
@@ -100,8 +117,12 @@ class Octopix(QMainWindow):
         dataBox.setCheckable(False)
         dataBox.layout = QVBoxLayout() 
         dataBox.layout.addWidget(openButton)
-        dataBox.layout.addWidget(QLabel("Data type:"))
-        dataBox.layout.addWidget(self.datatype_comboBox)
+        hbox = QHBoxLayout()
+        hbox.addWidget(QLabel("Data type:"))
+        hbox.addWidget(self.datatype_comboBox)
+        dataBox.layout.addLayout(hbox)
+        #dataBox.layout.addWidget(QLabel("Data type:"))
+        #dataBox.layout.addWidget(self.datatype_comboBox)
         dataBox.layout.addWidget(QLabel('Files:'))
         dataBox.layout.addWidget(self.filelist)
         dataBox.layout.addWidget(QLabel('Fields:'))
@@ -109,7 +130,6 @@ class Octopix(QMainWindow):
         dataBox.layout.addWidget(QLabel("Tmin:"))
         dataBox.layout.addWidget(self.tmin_textfield)
         dataBox.setLayout(dataBox.layout)        
-
 
         # the tabs        
         self.console = Console()
@@ -143,6 +163,7 @@ class Octopix(QMainWindow):
         gb.setLayout(gb.layout)
 
         controls_layout = QVBoxLayout()
+        #controls_layout.
         controls_layout.addWidget(dataBox)
         controls_layout.addWidget(gb)
         controls_layout.addStretch(1)
@@ -152,6 +173,7 @@ class Octopix(QMainWindow):
         outer_layout.addLayout(self.canvas_layout,0,1,2,1)
         outer_layout.addWidget(self.console,2,1)
         
+        outer_layout.setColumnMinimumWidth(0,220)
         outer_layout.setColumnStretch(0,0)
         outer_layout.setColumnStretch(1,1)
         outer_layout.setRowStretch(0,1)
@@ -170,6 +192,8 @@ class Octopix(QMainWindow):
             self.console.statistics_text_field.setStyleSheet("background-color:rgb(139, 146, 148);")
             self.filelist.setStyleSheet("background-color:rgb(139, 146, 148);")
             self.fieldlist.setStyleSheet("background-color:rgb(139, 146, 148);")
+        
+        self.initMenubar()
         
         if show_gui:
             self.show()
@@ -242,7 +266,7 @@ class Octopix(QMainWindow):
 
     def on_clicked_openPP(self):
         
-        folderpath = QFileDialog.getExistingDirectory(self, 'Select postProcessing Folder')
+        folderpath = QFileDialog.getExistingDirectory(self, 'Select postProcessing Folder',options=QFileDialog.DontUseNativeDialog)
         
         self.console.sendToOutput('Opening {0:}'.format(folderpath))
 

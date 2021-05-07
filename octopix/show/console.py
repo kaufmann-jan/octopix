@@ -198,7 +198,7 @@ class Console(QTabWidget):
         
         self.sendToOutput('exporting stats data')
         
-        fileName, fileType = QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()","","CSV Files (*.csv);;Text Files (*.txt);;All Files (*)"
+        fileName, fileType = QFileDialog.getSaveFileName(self,"Exporting the statistics data","","CSV Files (*.csv);;Text Files (*.txt);;All Files (*)"
                                                  ,options=QFileDialog.DontUseNativeDialog)
         if fileName:
             if "(*.csv)" in fileType:
@@ -221,7 +221,7 @@ class Console(QTabWidget):
         
         self.sendToOutput('exporting text data')
         
-        fileName, _ = QFileDialog.getSaveFileName(self,"QFileDialog.getSaveFileName()","","All Files (*);;Text Files (*.txt)"
+        fileName, _ = QFileDialog.getSaveFileName(self,"Exporting the statistics data","","All Files (*);;Text Files (*.txt)"
                                                  ,options=QFileDialog.DontUseNativeDialog)
         if fileName:
             with open(fileName,'w') as f:

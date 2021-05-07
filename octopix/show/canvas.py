@@ -41,7 +41,7 @@ class MplCanvas(FigureCanvasQTAgg):
         self.style = settings.get('style','classic')
 
                 
-    def _setPlotStyle(self):
+    def setPlotStyle(self):
         
         if self.style == 'classic':
             
@@ -136,7 +136,7 @@ class MplCanvas(FigureCanvasQTAgg):
                 self.axes.relim()
                 self.axes.autoscale_view()
 
-        self._setPlotStyle()
+        self.setPlotStyle()
         self.draw()
 
             
