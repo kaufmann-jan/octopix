@@ -70,8 +70,6 @@ class Octopix(QMainWindow):
         self.current_field_selection = {k:[] for k in supported_post_types}
         self.tmin = {k:0.0 for k in supported_post_types}
         
-#         settings_layout = QVBoxLayout()
-        
         self.tmin_textfield = QLineEdit()
         self.tmin_textfield.setMaximumWidth(100)
         self.tmin_textfield.setValidator(QDoubleValidator())
@@ -80,15 +78,6 @@ class Octopix(QMainWindow):
         self.datatype_comboBox = QComboBox()
         self.datatype_comboBox.setMaximumWidth(100)
         self.datatype_comboBox.currentIndexChanged.connect(self.on_datatype_selection_changed)
-
-        #flo = QFormLayout()
-        
-        #flo.addRow(QLabel("Tmin:"), self.tmin_textfield)
-        #flo.addRow(QLabel("Data type:"),self.datatype_comboBox)
-
-        #verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        #settings_layout.addItem(verticalSpacer)        
-        #settings_layout.addLayout(flo)
         
         self.filelist = QListWidget()
         self.filelist.setAlternatingRowColors(True)
@@ -101,27 +90,20 @@ class Octopix(QMainWindow):
         self.fieldlist.setMaximumSize(150,120)
         self.fieldlist.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.fieldlist.itemSelectionChanged.connect(self.on_fieldlist_selection_changed)              
-#         
-#         settings_layout.addWidget(QLabel('Files:'))
-#         settings_layout.addWidget(self.filelist)
-#         settings_layout.addWidget(QLabel('Fields:'))
-#         settings_layout.addWidget(self.fieldlist)
-#         settings_layout.addStretch(1)
 
-        
-        dataBox = QGroupBox("Data ")
+        dataBox = QGroupBox("Data")
         dataBox.setCheckable(False)
-        vbox = QVBoxLayout()
-        dataBox.setLayout(vbox)
-        vbox.addWidget(QLabel("Tmin:"))
-        vbox.addWidget(self.tmin_textfield)
-        vbox.addWidget(QLabel("Data type:"))
-        vbox.addWidget(self.datatype_comboBox)
-        vbox.addWidget(QLabel('Files:'))
-        vbox.addWidget(self.filelist)
-        vbox.addWidget(QLabel('Fields:'))
-        vbox.addWidget(self.fieldlist)
-        vbox.addStretch(1)
+        dataBox.layout = QVBoxLayout() 
+        dataBox.layout.addWidget(QLabel("Data type:"))
+        dataBox.layout.addWidget(self.datatype_comboBox)
+        dataBox.layout.addWidget(QLabel('Files:'))
+        dataBox.layout.addWidget(self.filelist)
+        dataBox.layout.addWidget(QLabel('Fields:'))
+        dataBox.layout.addWidget(self.fieldlist)
+        dataBox.layout.addWidget(QLabel("Tmin:"))
+        dataBox.layout.addWidget(self.tmin_textfield)
+        dataBox.setLayout(dataBox.layout)        
+
 
         # the tabs        
         self.console = Console()
@@ -147,22 +129,23 @@ class Octopix(QMainWindow):
 
         gb = QGroupBox("Control")
         gb.setCheckable(False)
-        #gb.setMaximumHeight(150)
-        vbox = QVBoxLayout()
-        gb.setLayout(vbox)
-        vbox.addWidget(auto_update_checkBox)
-        vbox.addWidget(QLabel("Interval:"))
-        vbox.addWidget(autoupdate_interval)
-        vbox.addWidget(reload_button)
+        gb.layout = QVBoxLayout()
+        gb.layout.addWidget(auto_update_checkBox)
+        gb.layout.addWidget(QLabel("Interval:"))
+        gb.layout.addWidget(autoupdate_interval)
+        gb.layout.addWidget(reload_button)
+        gb.setLayout(gb.layout)
 
+        controls_layout = QVBoxLayout()
+        controls_layout.addWidget(dataBox)
+        controls_layout.addWidget(gb)
+        controls_layout.addStretch(1)
          
         outer_layout = QGridLayout()
-        #outer_layout.addLayout(settings_layout,0,0,3,1)
-        outer_layout.addWidget(dataBox,0,0)
-        outer_layout.addWidget(gb,1,0,Qt.AlignTop)
-        
+        outer_layout.addLayout(controls_layout,0,0,3,1,Qt.AlignTop)
         outer_layout.addLayout(self.canvas_layout,0,1,2,1)
         outer_layout.addWidget(self.console,2,1)
+        
         outer_layout.setColumnStretch(0,0)
         outer_layout.setColumnStretch(1,1)
         outer_layout.setRowStretch(0,1)
