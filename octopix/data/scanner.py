@@ -5,16 +5,14 @@ from pathlib import Path
 from octopix.data.funcs import flatten,is_unique
 
 def get_pdirs(working_dir=Path.cwd()):
+
     
-    P = Path(Path(working_dir)/"postProcessing")
-    print(P)
-    
-    return [p.name for p in Path(Path(working_dir)/"postProcessing").glob('*')]
+    return [p.name for p in Path(working_dir/"postProcessing").glob('*')]
 
 
 def get_tdirs(pdir,working_dir=Path.cwd()):
     
-    return list(Path(Path(working_dir)/"postProcessing"/pdir).glob('[0-9]*'))
+    return list(Path(working_dir/"postProcessing"/pdir).glob('[0-9]*'))
 
 
 def get_datfiles(tdirs):

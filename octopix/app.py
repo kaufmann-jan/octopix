@@ -237,20 +237,17 @@ class Octopix(QMainWindow):
         
         self.data_subset = getSelectedListItems(self.fieldlist)
         
-        #self.console.statistics_text_field.setText(df)
         self.console.update(df)
         
 
     def on_clicked_openPP(self):
         
-        folderpath = QFileDialog.getExistingDirectory(self, 'Select Folder')
+        folderpath = QFileDialog.getExistingDirectory(self, 'Select postProcessing Folder')
         
-        self.console.sendToOutput('Opeoning {0:}'.format(folderpath))
+        self.console.sendToOutput('Opening {0:}'.format(folderpath))
 
-        self.wDir = folderpath
+        self.wDir = Path(folderpath).parent
         
-        self.OFscanner.scan(working_dir=self.wDir)
-        print(self.OFscanner.ppObjects)
 
 
     def on_auto_update_clicked(self, state):

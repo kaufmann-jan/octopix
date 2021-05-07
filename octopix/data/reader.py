@@ -12,10 +12,9 @@ import sys
 def makeRuntimeSelectableReader(reader_name,file_name,case_dir):
     
     reader_name = "OpenFOAM{0:}".format(reader_name)
-    print(reader_name)
+    
     try:
         reader = getattr(sys.modules[__name__],reader_name)(base_dir=file_name,case_dir=case_dir)
-        print('dsfsfsdf')
     except AttributeError as e:
         if str(e).find("octopix.data.fileIO"):
             if not str(e).find('None'):
