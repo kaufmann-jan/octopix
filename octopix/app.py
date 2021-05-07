@@ -19,7 +19,7 @@ from PyQt5.QtCore import pyqtSlot,QTimer,Qt
 from PyQt5.QtGui import QDoubleValidator,QIcon
 from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox,\
     QLabel,QLineEdit,QPushButton,QListWidget,QVBoxLayout,QHBoxLayout,QFormLayout,\
-    QGridLayout,QAction,qApp,QAbstractItemView,QSpacerItem,QSizePolicy,QGroupBox
+    QGridLayout,QAction,qApp,QAbstractItemView,QSpacerItem,QSizePolicy,QGroupBox,QFileDialog
 
 class Octopix(QMainWindow):
 
@@ -62,7 +62,8 @@ class Octopix(QMainWindow):
         
         self.config = OctopixConfigurator()
         
-        self.OFscanner = OFppScanner(supported_types=supported_post_types, working_dir=Path.cwd())
+        self.wDir = Path.cwd()
+        self.OFscanner = OFppScanner(supported_types=supported_post_types, working_dir=self.wDir)
         
         self.data_type = None
         self.data_subset = []
@@ -91,9 +92,14 @@ class Octopix(QMainWindow):
         self.fieldlist.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.fieldlist.itemSelectionChanged.connect(self.on_fieldlist_selection_changed)              
 
+        openButton = QPushButton('Open', self)
+        openButton.clicked.connect(self.on_clicked_openPP)
+        
+
         dataBox = QGroupBox("Data")
         dataBox.setCheckable(False)
         dataBox.layout = QVBoxLayout() 
+        dataBox.layout.addWidget(openButton)
         dataBox.layout.addWidget(QLabel("Data type:"))
         dataBox.layout.addWidget(self.datatype_comboBox)
         dataBox.layout.addWidget(QLabel('Files:'))
@@ -181,7 +187,7 @@ class Octopix(QMainWindow):
 
     def update(self):
                 
-        self.OFscanner.scan()
+        self.OFscanner.scan(working_dir=self.wDir)
         
         currentFoundItems = self.OFscanner.post_types
         
@@ -202,7 +208,7 @@ class Octopix(QMainWindow):
 
         # load the data and provide the dataframe to canvas 
         # data_type defines the reader
-        reader = makeRuntimeSelectableReader(reader_name=self.data_type,file_name=data_name)
+        reader = makeRuntimeSelectableReader(reader_name=self.data_type,file_name=data_name,case_dir=self.wDir)
         fields = reader.fields()
         
         if self.OFscanner.ppObjects:
@@ -234,7 +240,17 @@ class Octopix(QMainWindow):
         #self.console.statistics_text_field.setText(df)
         self.console.update(df)
         
+
+    def on_clicked_openPP(self):
         
+        folderpath = QFileDialog.getExistingDirectory(self, 'Select Folder')
+        
+        self.console.sendToOutput('Opeoning {0:}'.format(folderpath))
+
+        self.wDir = folderpath
+        
+        self.OFscanner.scan(working_dir=self.wDir)
+        print(self.OFscanner.ppObjects)
 
 
     def on_auto_update_clicked(self, state):

@@ -6,12 +6,15 @@ from octopix.data.funcs import flatten,is_unique
 
 def get_pdirs(working_dir=Path.cwd()):
     
-    return [p.name for p in Path(working_dir/"postProcessing").glob('*')]
-
-
-def get_tdirs(pdir):
+    P = Path(Path(working_dir)/"postProcessing")
+    print(P)
     
-    return list(Path(Path.cwd()/"postProcessing"/pdir).glob('[0-9]*'))
+    return [p.name for p in Path(Path(working_dir)/"postProcessing").glob('*')]
+
+
+def get_tdirs(pdir,working_dir=Path.cwd()):
+    
+    return list(Path(Path(working_dir)/"postProcessing"/pdir).glob('[0-9]*'))
 
 
 def get_datfiles(tdirs):
@@ -56,7 +59,7 @@ def findAllOFppObjects(supported_types,working_dir=Path.cwd()):
     ppObjects = {k:[] for k in supported_types}
     
     for val in get_pdirs(working_dir=working_dir):
-        dat_files = get_datfiles(get_tdirs(val))
+        dat_files = get_datfiles(get_tdirs(val,working_dir=working_dir))
         if is_unique(dat_files):
             try:
                 ppObjects[Path(dat_files[0]).stem].append(val)
@@ -89,7 +92,9 @@ class OFppScanner(object):
         
         self.scan()
     
-    def scan(self):
+    def scan(self,working_dir=Path.cwd()):
+        
+        self.working_dir = working_dir
         
         self.ppObjects = findAllOFppObjects(self.supported_types, self.working_dir)
         self.post_types = list(self.ppObjects.keys())

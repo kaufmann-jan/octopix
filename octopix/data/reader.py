@@ -9,11 +9,13 @@ from pathlib import Path
 import sys
 
 
-def makeRuntimeSelectableReader(reader_name,file_name):
+def makeRuntimeSelectableReader(reader_name,file_name,case_dir):
     
     reader_name = "OpenFOAM{0:}".format(reader_name)
+    print(reader_name)
     try:
-        reader = getattr(sys.modules[__name__],reader_name)(base_dir=file_name)
+        reader = getattr(sys.modules[__name__],reader_name)(base_dir=file_name,case_dir=case_dir)
+        print('dsfsfsdf')
     except AttributeError as e:
         if str(e).find("octopix.data.fileIO"):
             if not str(e).find('None'):
@@ -21,7 +23,7 @@ def makeRuntimeSelectableReader(reader_name,file_name):
         else:
             print(e)
             
-        reader = OpenFOAMpostProcessing(base_dir=None, file_name=None, names=None, usecols=None)        
+        reader = OpenFOAMpostProcessing(base_dir=None, file_name=None, case_dir=None, names=None, usecols=None)        
     
     return reader
 
