@@ -11,6 +11,8 @@ pip install octopix
 
 ## Usage
 
+`pyrcc5 -o resources.py resources.qrc`
+
 In order to run with
  
 ```bash

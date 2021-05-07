@@ -20,6 +20,8 @@ from PyQt5.QtWidgets import QMainWindow,QWidget,QApplication,QCheckBox,QComboBox
     QLabel,QLineEdit,QPushButton,QListWidget,QVBoxLayout,QHBoxLayout,QFormLayout,\
     QGridLayout,QAction,qApp,QAbstractItemView,QSpacerItem,QSizePolicy,QGroupBox,QFileDialog
 
+from octopix.resources import resources
+
 class Octopix(QMainWindow):
 
 
@@ -42,10 +44,17 @@ class Octopix(QMainWindow):
         exportAct.setStatusTip('export statistics data')
         exportAct.triggered.connect(self.console.on_click_exportButton)
         
+        saveAct = QAction(QIcon('save.png'), '&Save', self)
+        saveAct.setShortcut('Ctrl+S')
+        saveAct.setStatusTip('Save data')
+        saveAct.triggered.connect(self.console.on_click_saveButton)
+        
+        
         fileMenu = menubar.addMenu('&File')
         fileMenu.addAction(exitAct)
         fileMenu.addAction(openAct)
         fileMenu.addAction(exportAct)
+        fileMenu.addAction(saveAct)
         
         appearanceMenu = menubar.addMenu('&Appearance')
         plotStyleMenu = appearanceMenu.addMenu('Plot Stlye')
@@ -168,7 +177,7 @@ class Octopix(QMainWindow):
         controls_layout.addStretch(1)
 
         octoLabel = QLabel(self)
-        octoLabel.setPixmap(QPixmap('octo_croped.png').scaled(120,120,Qt.KeepAspectRatio))
+        octoLabel.setPixmap(QPixmap(':/images/octo_croped.png').scaled(120,120,Qt.KeepAspectRatio))
         controls_layout.addWidget(octoLabel)
          
         outer_layout = QGridLayout()

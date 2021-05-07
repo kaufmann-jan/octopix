@@ -111,32 +111,33 @@ class PandasModel(QAbstractTableModel):
             pass
 
 
-class StatisticsTextField(QTextEdit):
+class TimeSeriesData(object):
     
-    def __init___(self,*args,**kwargs):
+    def __init__(self,df=pd.DataFrame(data={'time':[]})):
         
-        super(StatisticsTextField,self).__init__(*args,**kwargs)
-        
-        self.setReadOnly(True)
-        self.setStyleSheet("background-color:lightgray")
-        
-        self.df = pd.DataFrame()
-
-    def setText(self, df):
+        ## this should become some kind of container for the data (frame)
+        ## which implemnts some kind of statitics, maybe sub-setting
+        ## ...etc
         
         self.df = df
 
+    def stats(self):
         try:
-            self.df = df.describe().T.loc[:,['count','mean','min','max','std']]
+            des = self.df.describe().T.loc[:,['count','mean','min','max','std']]
         except:
-            self.df = pd.DataFrame()
+            des = pd.DataFrame()
+        
+        return des
 
-        #tablefmt = "plain" #"simple"
-        #stream = io.StringIO()
-        #self.df.to_markdown(stream,tablefmt=tablefmt)
-        #QPlainTextEdit.setPlainText(self,stream.getvalue())
-        #QTextEdit.setText(self,self.df.to_markdown())
-        QTextEdit.setHtml(self,self.df.to_html(float_format=lambda x: '%8.4g' % x,border=0))
+
+class OutputTextField(QPlainTextEdit):
+    
+    def __init__(self,*args,**kwargs):
+        
+        super(OutputTextField,self).__init__(*args,**kwargs)
+
+        self.setReadOnly(True)
+        self.setStyleSheet("background-color:rgb(211,211,211)")
         
 
 
@@ -152,10 +153,8 @@ class Console(QTabWidget):
         # Add tabs
         self.addTab(self.table_tab, "Table")
         self.addTab(self.output_tab,"Output")
-         
-        self.output_text_field = QPlainTextEdit()
-        self.output_text_field.setReadOnly(True)
-        self.output_text_field.setStyleSheet("background-color:lightgray")
+        
+        self.output_text_field = OutputTextField()
         
         self.output_tab.layout = QVBoxLayout()
         self.output_tab.layout.addWidget(self.output_text_field)
@@ -175,11 +174,16 @@ class Console(QTabWidget):
         self.output_tab.setLayout(self.output_tab.layout)
         
         exportButton = QPushButton('Export')
-        exportButton.setToolTip('Reload the data')
+        exportButton.setToolTip('Export the statistics')
         exportButton.clicked.connect(self.on_click_exportButton)
+        
+        saveButton = QPushButton('Save')
+        saveButton.setToolTip('Save the data')
+        saveButton.clicked.connect(self.on_click_saveButton)
         
         hbox = QHBoxLayout()
         hbox.addStretch(1)
+        hbox.addWidget(saveButton)
         hbox.addWidget(exportButton)
                
         self.view = OctopixTableView()
@@ -192,6 +196,23 @@ class Console(QTabWidget):
     
     def update(self,data):
         self.view.update(data)
+
+
+    def on_click_saveButton(self):
+        
+        fileName, fileType = QFileDialog.getSaveFileName(self,"Saving the data","","CSV Files (*.csv);;Text Files (*.txt);;All Files (*)"
+                                                 ,options=QFileDialog.DontUseNativeDialog)
+        if fileName:
+            if "(*.csv)" in fileType:
+                if Path(fileName).suffix != '.csv':
+                    fileName += '.csv'
+                self.view.df.to_csv(fileName,index=True)
+            else:
+                with open(fileName,'w') as f:
+                    f.write(self.view.df.to_string(index=True))
+                    
+            self.sendToOutput('saving data')
+
     
                 
     def on_click_exportButton(self):
