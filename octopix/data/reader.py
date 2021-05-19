@@ -42,19 +42,27 @@ def prepare_data(df,time_start=0.0,data_subset=[]):
 
 def readOF(file_name):
     """Opens a text file, replaces all brackets with 
-    whitespaces and return a file stream.  
+    whitespaces and returns a file stream.  
     """
     trantab = str.maketrans('()','  ')
 
-    with open(file_name,'r') as f:
+    path = Path(file_name)
+
+    mtime = path.stat().st_mtime
+
+    with path.open('r') as f:
         data = StringIO(f.read().translate(trantab))
     
-    return data
+    return data,mtime
     
 def parseOF(file_name,names,usecols=None):
     """
     """
-    return pd.read_csv(readOF(file_name),delim_whitespace=True,header=None,names=names,comment='#',usecols=usecols)    
+
+    fstream,mtime = readOF(file_name)
+    df = pd.read_csv(fstream,delim_whitespace=True,header=None,names=names,comment='#',usecols=usecols)
+
+    return df,mtime
 
 
 def combineOFtimeFiles(base_dir,file_name,names,time_dirs=None,usecols=None):
@@ -62,10 +70,13 @@ def combineOFtimeFiles(base_dir,file_name,names,time_dirs=None,usecols=None):
     if time_dirs is None:
         time_dirs = listTimeDirs(base_dir)
 
-    data = []
+    data,mtimes = [],[]
     
+
     for td in time_dirs:
-        data.append(parseOF(os.path.join(base_dir,td,file_name),names,usecols).set_index('time'))
+        df,mtime = parseOF(os.path.join(base_dir,td,file_name),names,usecols)
+        data.append(df.set_index('time'))
+        mtimes.append(mtime)
 
     d = data[-1]
        
@@ -75,7 +86,7 @@ def combineOFtimeFiles(base_dir,file_name,names,time_dirs=None,usecols=None):
                 i = i[i.index < d.index.array[-1]]
             d = d.combine_first(i)
     
-    return d
+    return d,np.amax(mtimes)
 
 def listTimeDirs(path_to_time_dirs):
     ## TODO: check the pattern. the list seems unnecessary, [0-9]' should cover all
@@ -116,7 +127,8 @@ class OpenFOAMpostProcessing(object):
 
         try:
             self.base_dir = os.path.join(self.case_dir,'postProcessing',base_dir)
-        except TypeError:
+        except TypeError as e:
+            print(e)
             self.data = pd.DataFrame(columns=names)
         
         if time_dirs is None:
@@ -125,9 +137,10 @@ class OpenFOAMpostProcessing(object):
             self.time_dirs = time_dirs
         
         try:
-            self.data = combineOFtimeFiles(self.base_dir, file_name, names, self.time_dirs,usecols)
+            self.data,self.mtime = combineOFtimeFiles(self.base_dir, file_name, names, self.time_dirs,usecols)
         except IndexError:
             self.data = pd.DataFrame(columns=names)
+            self.mtime = 0
         
         self.tmin,self.tmax = tmin,tmax
         
@@ -153,7 +166,8 @@ class OpenFOAMforces(OpenFOAMpostProcessing):
         names = ['time','fxp','fyp','fzp','fxv','fyv','fzv','fxpor','fypor','fzpor', 'mxp','myp','mzp','mxv','myv','mzv','mxpor','mypor','mzpor']
         usecols = ['time','fxp','fyp','fzp','fxv','fyv','fzv','mxp','myp','mzp','mxv','myv','mzv']
 
-        self.SORT_ORDER = {'time':-1, "fx": 0}        
+        self.SORT_ORDER = {'time':-1, "fx": 0}
+          
         for i in range(1,len(usecols)):
             self.SORT_ORDER[usecols[i]] = i
         
@@ -163,7 +177,7 @@ class OpenFOAMforces(OpenFOAMpostProcessing):
             if str(e) == 'Too many columns specified: expected 19 and found 13':
                 #print("seems to be a force file without porosity")
                 super().__init__(base_dir=base_dir,file_name=file_name,case_dir=case_dir,names=usecols,usecols=usecols,scale=scale,tmin=tmin,tmax=tmax)
-                
+        
         self.data['fx'] = self.data['fxp'] + self.data['fxv']
         
         self.timeRange()
