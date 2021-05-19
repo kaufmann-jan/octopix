@@ -18,6 +18,7 @@ def get_tdirs(pdir,working_dir=Path.cwd()):
 def get_datfiles(tdirs):
     
     t = flatten([list(p.glob('*.dat')) for p in tdirs])
+
     return [p.name for p in t]
    
 
@@ -58,7 +59,7 @@ def findAllOFppObjects(supported_types,working_dir=Path.cwd()):
     
     for val in get_pdirs(working_dir=working_dir):
         dat_files = get_datfiles(get_tdirs(val,working_dir=working_dir))
-        if is_unique(dat_files):
+        if dat_files and is_unique(dat_files):
             try:
                 ppObjects[Path(dat_files[0]).stem].append(val)
             except:
