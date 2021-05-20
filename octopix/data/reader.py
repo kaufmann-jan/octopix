@@ -4,9 +4,11 @@
 import pandas as pd
 import numpy as np
 from io import StringIO
-import os
+#import os
 from pathlib import Path
 import sys
+from datetime import datetime, timezone
+
 
 
 def makeRuntimeSelectableReader(reader_name,file_name,case_dir):
@@ -48,21 +50,19 @@ def readOF(file_name):
 
     path = Path(file_name)
 
-    mtime = path.stat().st_mtime
-
     with path.open('r') as f:
         data = StringIO(f.read().translate(trantab))
     
-    return data,mtime
+    return data
     
 def parseOF(file_name,names,usecols=None):
     """
     """
 
-    fstream,mtime = readOF(file_name)
+    fstream = readOF(file_name)
     df = pd.read_csv(fstream,delim_whitespace=True,header=None,names=names,comment='#',usecols=usecols)
 
-    return df,mtime
+    return df
 
 
 def combineOFtimeFiles(base_dir,file_name,names,time_dirs=None,usecols=None):
@@ -70,13 +70,19 @@ def combineOFtimeFiles(base_dir,file_name,names,time_dirs=None,usecols=None):
     if time_dirs is None:
         time_dirs = listTimeDirs(base_dir)
 
-    data,mtimes = [],[]
-    
+    # As preparation for checking if loading of the data is necessary,
+    # we can determine the latest modification time of all files located
+    # under the base dir
+    if False:
+        mtime = np.amax([Path(base_dir,td,file_name).stat().st_mtime for td in time_dirs])
+        print(base_dir,datetime.fromtimestamp(mtime, tz=timezone.utc))
+
+    data = []
 
     for td in time_dirs:
-        df,mtime = parseOF(os.path.join(base_dir,td,file_name),names,usecols)
+        p = Path(base_dir,td,file_name) # os.path.join(base_dir,td,file_name)
+        df = parseOF(p,names,usecols)
         data.append(df.set_index('time'))
-        mtimes.append(mtime)
 
     d = data[-1]
        
@@ -86,7 +92,7 @@ def combineOFtimeFiles(base_dir,file_name,names,time_dirs=None,usecols=None):
                 i = i[i.index < d.index.array[-1]]
             d = d.combine_first(i)
     
-    return d,np.amax(mtimes)
+    return d
 
 def listTimeDirs(path_to_time_dirs):
     ## TODO: check the pattern. the list seems unnecessary, [0-9]' should cover all
@@ -121,12 +127,12 @@ class OpenFOAMpostProcessing(object):
             return
        
         if case_dir is None:
-            self.case_dir = os.getcwd()
+            self.case_dir = Path.cwd() #os.getcwd()
         else:
             self.case_dir = case_dir
 
         try:
-            self.base_dir = os.path.join(self.case_dir,'postProcessing',base_dir)
+            self.base_dir = Path(self.case_dir,'postProcessing',base_dir)
         except TypeError as e:
             print(e)
             self.data = pd.DataFrame(columns=names)
@@ -137,10 +143,9 @@ class OpenFOAMpostProcessing(object):
             self.time_dirs = time_dirs
         
         try:
-            self.data,self.mtime = combineOFtimeFiles(self.base_dir, file_name, names, self.time_dirs,usecols)
+            self.data = combineOFtimeFiles(self.base_dir, file_name, names, self.time_dirs,usecols)
         except IndexError:
             self.data = pd.DataFrame(columns=names)
-            self.mtime = 0
         
         self.tmin,self.tmax = tmin,tmax
         
