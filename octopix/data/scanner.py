@@ -5,7 +5,6 @@ from pathlib import Path
 from octopix.data.funcs import flatten,is_unique
 
 def get_pdirs(working_dir=Path.cwd()):
-
     
     return [p.name for p in Path(working_dir/"postProcessing").glob('*')]
 

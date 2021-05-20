@@ -107,7 +107,6 @@ class Simulation(object):
             for given data type
         """
         
-        
         if isinstance(data_files, str):
             return self.container[data_type][data_files]
         elif isinstance(data_files, list):
@@ -145,20 +144,21 @@ def main():
         count += 1
         time.sleep(0.1)
 
-    s.load_data({'residuals':'residuals'})
-    s.load_data({'forces':'forces'})
+    #s.load_data({'forces':'forces'})
     
-    df = s.get_data('residuals','residuals')
-    
-    
-    import matplotlib.pyplot as plt
-    
-    
-    fig, ax = plt.subplots()
-    plt.plot(df.time,df.loc[:, df.columns != 'time'])
-    plt.semilogy()
-    plt.grid()
-    plt.show()
+    if True:
+        
+        s.load_data({'residuals':'residuals'})    
+        df = s.get_data('residuals','residuals')
+        print(df)
+        
+        import matplotlib.pyplot as plt
+        
+        fig, ax = plt.subplots()
+        plt.plot(df.time,df.loc[:, df.columns != 'time'])
+        plt.semilogy()
+        plt.grid()
+        plt.show()
     
     
     
