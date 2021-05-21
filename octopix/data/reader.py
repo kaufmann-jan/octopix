@@ -221,11 +221,11 @@ class OpenFOAMrigidBodyState(OpenFOAMpostProcessing):
     
     def __init__(self,file_name='hull.dat',case_dir=None,subtractInitialCoG=True,tmin=None,tmax=None):
 
+        self.subtractInitialCoG = subtractInitialCoG
+
         names = ['time','x','y','z','roll','pitch','yaw','vx','vy','vz','vroll','vpitch','vyaw','xvcorr','yvcorr','zvcorr']
         
         super().__init__(base_dir='rigidBodyState',file_name=file_name,names=names,usecols=None,case_dir=case_dir,tmin=tmin,tmax=tmax)
-        
-        self.subtractInitialCoG = subtractInitialCoG
         
         
     def customize(self):
