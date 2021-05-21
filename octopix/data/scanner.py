@@ -2,26 +2,24 @@
 # -*- coding: utf-8 -*-*-
 
 from pathlib import Path
+
 from octopix.data.funcs import flatten,is_unique
+from octopix.data.reader import list_time_dirs
+from octopix.common.config import supported_post_types
 
 def get_pdirs(working_dir=Path.cwd()):
     
     return [p.name for p in Path(working_dir/"postProcessing").glob('*')]
 
 
-def get_tdirs(pdir,working_dir=Path.cwd()):
-    
-    return list(Path(working_dir/"postProcessing"/pdir).glob('[0-9]*'))
-
-
-def get_datfiles(tdirs):
+def find_dat_files(tdirs):
     
     t = flatten([list(p.glob('*.dat')) for p in tdirs])
 
     return [p.name for p in t]
    
 
-def findAllOFppObjects(supported_types,working_dir=Path.cwd()):
+def find_all_OF_ppObjects(supported_types,working_dir=Path.cwd()):
     """
     Parses the postProcessing directory recursively in the given
     working directory for OpenFOAM's function object generated data files.
@@ -57,11 +55,12 @@ def findAllOFppObjects(supported_types,working_dir=Path.cwd()):
     ppObjects = {k:[] for k in supported_types}
     
     for val in get_pdirs(working_dir=working_dir):
-        dat_files = get_datfiles(get_tdirs(val,working_dir=working_dir))
+        dat_files = find_dat_files(list_time_dirs(Path(working_dir,'postProcessing',val)))
+        
         if dat_files and is_unique(dat_files):
             try:
                 ppObjects[Path(dat_files[0]).stem].append(val)
-            except:
+            except: #??? not nice
                 pass
       
     ppObjects = {k:v for (k,v) in ppObjects.items() if len(v) > 0}
@@ -74,12 +73,20 @@ def findAllOFppObjects(supported_types,working_dir=Path.cwd()):
     # postProcessing/<userDefinedOutputName>/0/<functionObjectType>.dat
         
     if 'rigidBodyState' in get_pdirs(working_dir):
-        ppObjects['rigidBodyState'] = get_datfiles(get_tdirs('rigidBodyState')) 
+        ppObjects['rigidBodyState'] = find_dat_files(list_time_dirs(Path(working_dir,'postProcessing','rigidBodyState')))
     
     #ppObjects = {k:sorted(v,reverse=True) for (k,v) in ppObjects.items()}
+    # for sorting we replace the underscore with the bracket, as the bracket is at the end of the sorting order
+    # therefore all file names containing an underscore a put to the end
+    # Usefull for e.g.
+    # forces
+    # forces_aft
+    # forces_bow
+       
     ppObjects = {k:sorted(v,key=lambda x: x.replace('_','{')) for (k,v) in ppObjects.items()}
         
     return ppObjects
+
 
 class OFppScanner(object):
     
@@ -94,14 +101,13 @@ class OFppScanner(object):
         
         self.working_dir = working_dir
         
-        self.ppObjects = findAllOFppObjects(self.supported_types, self.working_dir)
+        self.ppObjects = find_all_OF_ppObjects(self.supported_types, self.working_dir)
         self.post_types = list(self.ppObjects.keys())
 
 
 def main():
     
-    supported_post_types = ['residuals','forces','rigidBodyState','time','fieldMinMax']
-    ppObjects = findAllOFppObjects(supported_post_types)
+    ppObjects = find_all_OF_ppObjects(supported_post_types)
     print(ppObjects)
 
 if __name__ == '__main__':

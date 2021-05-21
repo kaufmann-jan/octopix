@@ -5,7 +5,7 @@ import time
 from pathlib import Path
 
 from octopix.common.config import supported_post_types
-from octopix.data.scanner import findAllOFppObjects
+from octopix.data.scanner import find_all_OF_ppObjects
 from octopix.data.reader import makeRuntimeSelectableReader
 
 
@@ -38,7 +38,7 @@ class Simulation(object):
     
     def scan(self,verbose=False):
         
-        ppo = self.ppo_to_cont(findAllOFppObjects(supported_types=supported_post_types, working_dir=self.location))
+        ppo = self.ppo_to_cont(find_all_OF_ppObjects(supported_types=supported_post_types, working_dir=self.location))
 
         # if there is some post data found:
         if ppo:

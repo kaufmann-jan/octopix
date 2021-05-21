@@ -15,16 +15,7 @@ def makeRuntimeSelectableReader(reader_name,file_name,case_dir):
     
     reader_name = "OpenFOAM{0:}".format(reader_name)
     
-    #try:
     reader = getattr(sys.modules[__name__],reader_name)(base_dir=file_name,case_dir=case_dir)
-#     except AttributeError as e:
-#         if str(e).find("octopix.data.fileIO"):
-#             if not str(e).find('None'):
-#                 print('unknown reader',reader_name)    
-#         else:
-#             print(e)
-#             
-#         reader = OpenFOAMpostProcessing(base_dir=None, file_name=None, case_dir=None, names=None, usecols=None)        
     
     return reader
 
@@ -44,7 +35,8 @@ def prepare_data(df,time_start=0.0,data_subset=[]):
 
 def parse_of(file_name,names,usecols=None):
     """Opens a text file, replaces all brackets with 
-    whitespaces and returns a file stream.  
+    whitespaces, passes a file stream to the pandas csv read method
+    and return a pandas DataFrame.  
     """
     trantab = str.maketrans('()','  ')
 
@@ -58,40 +50,51 @@ def parse_of(file_name,names,usecols=None):
     return df
 
 
-def combine_oftime_files(base_dir,file_name,names,time_dirs=None,usecols=None):
-    
-    if time_dirs is None:
-        time_dirs = list_time_dirs(base_dir)
-
-    # As preparation for checking if loading of the data is necessary,
-    # we can determine the latest modification time of all files located
-    # under the base dir
-    if False:
-        mtime = np.amax([Path(base_dir,td,file_name).stat().st_mtime for td in time_dirs])
-        print(base_dir,datetime.fromtimestamp(mtime, tz=timezone.utc))
-
-    data = []
-
-    for td in time_dirs:
-        p = Path(base_dir,td,file_name) # os.path.join(base_dir,td,file_name)
-        df = parse_of(p,names,usecols)
-        data.append(df.set_index('time'))
-
-    d = data[-1]
-       
-    if len(data) > 1:
-        for i in reversed(data[:-1]):
-            if i.index.array[-1] > d.index.array[-1]: 
-                i = i[i.index < d.index.array[-1]]
-            d = d.combine_first(i)
-    
-    return d
-
 def list_time_dirs(path_to_time_dirs):
     
-    return sorted([str(x.name) for x in Path(path_to_time_dirs).glob('[0-9]*')],key=float,reverse=False)
+    l = sorted([str(x.name) for x in Path(path_to_time_dirs).glob('[0-9]*')],key=float,reverse=False)
+    l = [Path(path_to_time_dirs,p) for p in l]
+    
+    return l
 
 class OpenFOAMpostProcessing(object):
+
+
+    def combine_oftime_files(self,file_name,names,time_dirs=None,usecols=None):
+        
+        if time_dirs is None:
+            time_dirs = list_time_dirs(self.base_dir)
+            
+        current_mtime = np.amax([Path(self.base_dir,td,file_name).stat().st_mtime for td in time_dirs])
+        
+        verbose = True
+        if current_mtime == self.mtime: # no need to reload
+            if verbose: print('no need to reload, we are up to date')
+            self.up_to_date = True
+        else:
+            self.up_to_date = False
+            self.mtime = current_mtime
+            
+            tmp_data = []
+        
+            for td in time_dirs:
+                p = Path(self.base_dir,td,file_name)
+                df = parse_of(p,names,usecols)
+                tmp_data.append(df.set_index('time'))
+        
+            d = tmp_data[-1]
+               
+            if len(tmp_data) > 1:
+                for i in reversed(tmp_data[:-1]):
+                    if i.index.array[-1] > d.index.array[-1]: 
+                        i = i[i.index < d.index.array[-1]]
+                    d = d.combine_first(i)
+            
+            self.data = d
+            self.data.reset_index(inplace=True)
+            
+
+
 
     def sort_fields(self):  
         try: 
@@ -108,6 +111,9 @@ class OpenFOAMpostProcessing(object):
         return str(self.data.head())
     
     def __init__(self,base_dir,file_name,names,usecols,case_dir=None,time_dirs=None,tmin=None,tmax=None):
+        
+        self.mtime = 0
+        self.up_to_date = False
         
         # create and empty reader
         if base_dir is None and file_name is None:
@@ -146,14 +152,15 @@ class OpenFOAMpostProcessing(object):
 
     def load_data(self):
         
+        # Todo: do we need to determine time_dirs on each loading call? I think yes
         try:
-            self.data = combine_oftime_files(self.base_dir, self.file_name, self.names, self.time_dirs,self.usecols)
-        except IndexError:
+            self.combine_oftime_files(self.file_name, self.names, self.time_dirs,self.usecols)
+        except IndexError as e:
+            print(e)
             self.data = pd.DataFrame(columns=self.names)
 
-        self.data.reset_index(inplace=True)
-    
-        self.customize()
+        if not self.up_to_date:
+            self.customize()
     
     
     def customize(self):
@@ -210,6 +217,7 @@ class OpenFOAMrigidBodyState(OpenFOAMpostProcessing):
         
     def customize(self):
         OpenFOAMpostProcessing.customize(self)
+        
         if self.data.size != 0:
             if self.subtractInitialCoG:
                 for dof in ['x','y','z']:
@@ -229,35 +237,40 @@ class OpenFOAMresiduals(OpenFOAMpostProcessing):
         
         super().__init__(base_dir=base_dir,file_name=file_name,names=names,usecols=None,case_dir=case_dir,tmin=tmin,tmax=tmax)
         
-        self.data.dropna(how='all',axis=1,inplace=True)
-        
-        print('hui',(self.base_dir,self.time_dirs[0],'residuals.dat'))
-        
-        with Path(self.base_dir,self.time_dirs[0],'residuals.dat').open('r') as f:
-            for i,line in enumerate(f):
-                if i == 1:
-                    header = line
-                    break
-        header = header.replace('#','').split()[:]
-        header[0] = 'time'
+    
+    def customize(self): 
+        OpenFOAMpostProcessing.customize(self)
 
-        try:        
-            self.data.columns = header
-            self.names = list(header[1:])
-        except ValueError as e:
-            print('OpenFOAMresiduals::init',e)
+        if self.usecols is None:
         
-        try:
-            self.data['U'] = np.abs(self.data['Ux'].pow(2) + self.data['Uy'].pow(2) + self.data['Uz'].pow(2))
-            self.data.drop(columns=['Ux','Uy','Uz'],inplace=True)
+            self.data.dropna(how='all',axis=1,inplace=True)
             
+            with Path(self.base_dir,self.time_dirs[0],'residuals.dat').open('r') as f:
+                for i,line in enumerate(f):
+                    if i == 1:
+                        header = line
+                        break
+    
+            header = header.replace('#','').split()[:]
+            header[0] = 'time'
+    
+            self.names = header
+            self.usecols = header
+            
+            mapper = dict(zip(self.data.columns,self.usecols))
+            
+            self.data.rename(columns=mapper,inplace=True)
+
+
+        try:
+            self.data['U'] = (np.abs(self.data['Ux'].pow(2) + self.data['Uy'].pow(2) + self.data['Uz'].pow(2)))/3.
+            self.data.drop(columns=['Ux','Uy','Uz'],inplace=True)    
         except Exception:
             pass
 
         self.time_range()
             
         self.sort_fields()
-        
         
 
 class OpenFOAMtime(OpenFOAMpostProcessing):
@@ -270,16 +283,29 @@ class OpenFOAMtime(OpenFOAMpostProcessing):
         
         super().__init__(base_dir=base_dir,file_name=file_name,names=names,usecols=None,case_dir=case_dir,tmin=tmin,tmax=tmax)
         
-        self.data.dropna(how='all',axis=1,inplace=True)
         
-        with Path(self.base_dir,self.time_dirs[0],'time.dat').open('r') as f:
-            for i,line in enumerate(f):
-                if i == 1:
-                    header = line
-                    break
-        header = header.replace('#','').split()[:]
-        header[0] = 'time'
-        self.data.columns = header
+    def customize(self):
+        OpenFOAMpostProcessing.customize(self)
+                
+        if self.usecols is None:
+            self.data.dropna(how='all',axis=1,inplace=True)
+            
+            with Path(self.base_dir,self.time_dirs[0],'time.dat').open('r') as f:
+                for i,line in enumerate(f):
+                    if i == 1:
+                        header = line
+                        break
+                    
+            header = header.replace('#','').split()[:]
+            header[0] = 'time'
+    
+            self.names = header
+            self.usecols = header
+            
+            mapper = dict(zip(self.data.columns,self.usecols))
+            
+            self.data.rename(columns=mapper,inplace=True)
+        
         
         self.time_range()
         
@@ -292,6 +318,10 @@ class OpenFOAMfieldMinMax(OpenFOAMpostProcessing):
         usecols = ['time','field','min','max']
         
         super().__init__(base_dir=base_dir,file_name=file_name,names=names,usecols=usecols,case_dir=case_dir,tmin=tmin,tmax=tmax)
+        
+        
+    def customize(self):
+        OpenFOAMpostProcessing.customize(self)
         
         fields = self.data['field'].unique()
     
@@ -327,7 +357,10 @@ def time(base_dir='timeMonitor'):
 
 def main():
 
-    r = OpenFOAMresiduals()
+    #r = OpenFOAMforces() 
+    #r = OpenFOAMresiduals()
+    #r = OpenFOAMtime(base_dir='timeMonitor')
+    r = OpenFOAMfieldMinMax(base_dir='minMaxMag')
     print(r.data)
     r.load_data()
     print(r.data)
