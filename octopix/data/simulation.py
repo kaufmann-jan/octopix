@@ -74,8 +74,9 @@ class Simulation(object):
         self.scan()
             
 
-    def load_data(self,data_dict,verbose=False):
+    def load_data_readers(self,data_dict,verbose=False):
         """
+        
         Parameter
         ---------
         
@@ -90,13 +91,18 @@ class Simulation(object):
         for data_type in data_dict.keys():
             if isinstance(data_dict[data_type],str):
                 data_dict[data_type] = [data_dict[data_type]]
+                
             for data_file in data_dict[data_type]:
-                reader = makeRuntimeSelectableReader(reader_name=data_type, file_name=data_file, case_dir=self.location)
-        
-                self.container[data_type][data_file] = reader.data
+                if self.container[data_type][data_file] is None: 
+                    reader = makeRuntimeSelectableReader(reader_name=data_type, file_name=data_file, case_dir=self.location)
+                    self.container[data_type][data_file] = reader
+
 
     def get_data(self,data_type,data_files=None):
         """
+        
+        this loads and gets, as reader.get_data() (re)loads and returns the data 
+        
         Parameter
         ---------
         
@@ -108,12 +114,13 @@ class Simulation(object):
         """
         
         if isinstance(data_files, str):
-            return self.container[data_type][data_files]
+            return self.container[data_type][data_files].get_data()
         elif isinstance(data_files, list):
-            return [self.container[data_type][data_file] for data_file in data_files]
+            return [self.container[data_type][data_file].get_data() for data_file in data_files]
         elif not data_files:
             print('returning all data_files for data_type',data_type)
-            return list(self.container[data_type].values())
+            
+            return [x.get_data() for x in list(self.container[data_type].values()) ]
         else:
             raise TypeError
         
@@ -127,33 +134,41 @@ def main():
     
     s = Simulation()
 
+    print(s.data_types())
+    print(s.data_files('forces'))
+    
+    # instantiate all reader for the simulation
+    for data_type in s.data_types():
+        s.load_data_readers({data_type:s.data_files(data_type)})
+        
     count = 0
+    
     while False:
         print(count)
         if count == 1:
-            s.load_data({'forces':'forces'})
             print(s.get_data('forces', 'forces'))
         elif count == 2:
-            s.load_data({'residuals':['residuals']})
-        elif count == 3:
-            s.load_data({'forces':['forces','f_DTC']})
-            print(s.get_data('forces',['forces','f_DTC']))
+            s.get_data('residuals')
+        
         elif count == 4:
-            break
-        
-        count += 1
-        time.sleep(0.1)
-
-    #s.load_data({'forces':'forces'})
+            s.get_data('residuals')    
     
+        elif count == 6:
+            s.get_data('residuals')
+        
+        elif count == 10:
+            break
+
+        count += 1
+        time.sleep(1)
+
+
+
     if True:
-        
-        s.load_data({'residuals':'residuals'})    
-        df = s.get_data('residuals','residuals')
-        print(df)
-        
+
         import matplotlib.pyplot as plt
         
+        df = s.get_data('residuals')[0]
         fig, ax = plt.subplots()
         plt.plot(df.time,df.loc[:, df.columns != 'time'])
         plt.semilogy()

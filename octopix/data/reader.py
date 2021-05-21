@@ -148,9 +148,9 @@ class OpenFOAMpostProcessing(object):
         else:
             self.time_dirs = time_dirs
             
-        self.load_data()
+        self.load_data_readers()
 
-    def load_data(self):
+    def load_data_readers(self):
         
         # Todo: do we need to determine time_dirs on each loading call? I think yes
         try:
@@ -162,6 +162,11 @@ class OpenFOAMpostProcessing(object):
         if not self.up_to_date:
             self.customize()
     
+    def get_data(self):
+        
+        self.load_data_readers()
+        
+        return self.data
     
     def customize(self):
         pass
@@ -362,7 +367,7 @@ def main():
     #r = OpenFOAMtime(base_dir='timeMonitor')
     r = OpenFOAMfieldMinMax(base_dir='minMaxMag')
     print(r.data)
-    r.load_data()
+    r.load_data_readers()
     print(r.data)
 
     if False:    
