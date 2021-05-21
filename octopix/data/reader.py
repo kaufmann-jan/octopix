@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import pandas as pd
-import numpy as np
 from io import StringIO
-#import os
 from pathlib import Path
 import sys
-#from datetime import datetime, timezone
 
+import pandas as pd
+import numpy as np
 
 
 def makeRuntimeSelectableReader(reader_name,file_name,case_dir):
