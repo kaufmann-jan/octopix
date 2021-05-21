@@ -59,7 +59,6 @@ def list_time_dirs(path_to_time_dirs):
 
 class OpenFOAMpostProcessing(object):
 
-
     def combine_oftime_files(self,file_name,names,time_dirs=None,usecols=None):
         
         if time_dirs is None:
@@ -92,29 +91,31 @@ class OpenFOAMpostProcessing(object):
             
             self.data = d
             self.data.reset_index(inplace=True)
-            
 
 
-
-    def sort_fields(self):  
+    def sort_fields(self):
+          
         try: 
             self.data = self.data.reindex(sorted(self.data.columns,key=lambda val: self.SORT_ORDER[val]),axis=1)
         except KeyError as e:
             print(e)
 
     def fields(self):
+        
         f = list(self.data.columns)
         f.remove('time')
+        
         return f
     
     def __str__(self):
+        
         return str(self.data.head())
     
     def __init__(self,base_dir,file_name,names,usecols,case_dir=None,time_dirs=None,tmin=None,tmax=None):
         
         # Todo: may we can use the routines from residuals and time reader as a generic method in the 
-        # base class? In case no names and usecols are given, we (at least) try to determine based on the 
-        # raw header line.   
+        # base class? custumize is same for both. So maybe in case no names and usecols are given, 
+        # we (at least) try to determine based on the raw header line....   
         
         self.mtime = 0
         self.up_to_date = False
@@ -176,6 +177,7 @@ class OpenFOAMpostProcessing(object):
         return self.data
     
     def customize(self):
+        
         pass
         
 
@@ -206,7 +208,8 @@ class OpenFOAMforces(OpenFOAMpostProcessing):
             if str(e) == 'Too many columns specified: expected 19 and found 13':
                 #print("seems to be a force file without porosity")
                 super().__init__(base_dir=base_dir,file_name=file_name,case_dir=case_dir,names=usecols,usecols=usecols,tmin=tmin,tmax=tmax)
-        
+            else:
+                raise
         
     def customize(self):
         OpenFOAMpostProcessing.customize(self)
