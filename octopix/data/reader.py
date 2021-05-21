@@ -57,11 +57,15 @@ def list_time_dirs(path_to_time_dirs):
 
 class OpenFOAMpostProcessing(object):
 
-    def combine_oftime_files(self,file_name,names,time_dirs=None,usecols=None):
+    def combine_oftime_files(self,file_name,names,usecols=None):
         
-        if time_dirs is None:
-            time_dirs = list_time_dirs(self.base_dir)
-            
+        time_dirs = list_time_dirs(self.base_dir)
+        
+        if not time_dirs:
+            # no time dirs found, empty case!!!
+            self.data = pd.DataFrame(columns=self.names)
+            return
+        
         current_mtime = np.amax([Path(self.base_dir,td,file_name).stat().st_mtime for td in time_dirs])
         
         verbose = True
@@ -109,7 +113,7 @@ class OpenFOAMpostProcessing(object):
         
         return str(self.data.head())
     
-    def __init__(self,base_dir,file_name,names,usecols,case_dir=None,time_dirs=None,tmin=None,tmax=None):
+    def __init__(self,base_dir,file_name,names,usecols,case_dir=None,tmin=None,tmax=None):
         
         # Todo: may we can use the routines from residuals and time reader as a generic method in the 
         # base class? custumize is same for both. So maybe in case no names and usecols are given, 
@@ -145,22 +149,13 @@ class OpenFOAMpostProcessing(object):
             self.data = pd.DataFrame(columns=names)
         
         self.base_dir = Path(self.case_dir,'postProcessing',base_dir)
-        
-        # is it really necessary to have the time_dirs as an argument? I think the idea was
-        # to be able to select only specific but not all time dirs when loading the reader.
-        # so far we never used this funtionality.  
-        if time_dirs is None:
-            self.time_dirs = list_time_dirs(self.base_dir)
-        else:
-            self.time_dirs = time_dirs
             
         self.load_data()
 
     def load_data(self):
         
-        # Todo: do we need to determine time_dirs on each loading call? I think yes
         try:
-            self.combine_oftime_files(self.file_name, self.names, self.time_dirs,self.usecols)
+            self.combine_oftime_files(self.file_name, self.names, self.usecols)
         except IndexError as e:
             print(e)
             self.data = pd.DataFrame(columns=self.names)
@@ -257,8 +252,9 @@ class OpenFOAMresiduals(OpenFOAMpostProcessing):
         if self.usecols is None:
         
             self.data.dropna(how='all',axis=1,inplace=True)
-            
-            with Path(self.base_dir,self.time_dirs[0],'residuals.dat').open('r') as f:
+            with Path(self.base_dir,list_time_dirs(Path(self.base_dir))[0],'residuals.dat').open('r') as f:
+            #print (list_time_dirs(Path(self.base_dir)))
+            #with Path(self.base_dir,self.time_dirs[0],'residuals.dat').open('r') as f:
                 for i,line in enumerate(f):
                     if i == 1:
                         header = line
@@ -303,7 +299,7 @@ class OpenFOAMtime(OpenFOAMpostProcessing):
         if self.usecols is None:
             self.data.dropna(how='all',axis=1,inplace=True)
             
-            with Path(self.base_dir,self.time_dirs[0],'time.dat').open('r') as f:
+            with Path(self.base_dir,list_time_dirs(Path(self.base_dir))[0],'time.dat').open('r') as f:
                 for i,line in enumerate(f):
                     if i == 1:
                         header = line

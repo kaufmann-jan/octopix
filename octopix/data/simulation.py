@@ -142,7 +142,6 @@ def main():
         s.load_data_readers({data_type:s.data_files(data_type)})
         
     count = 0
-    
     while False:
         print(count)
         if count == 1:
@@ -162,10 +161,11 @@ def main():
         count += 1
         time.sleep(1)
 
+    for data_type in s.data_types():
+        print(s.get_data(data_type))
 
 
     if True:
-
         import matplotlib.pyplot as plt
         
         df = s.get_data('residuals')[0]
