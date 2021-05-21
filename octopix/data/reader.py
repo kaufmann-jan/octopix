@@ -7,7 +7,7 @@ from io import StringIO
 #import os
 from pathlib import Path
 import sys
-from datetime import datetime, timezone
+#from datetime import datetime, timezone
 
 
 
@@ -112,10 +112,14 @@ class OpenFOAMpostProcessing(object):
     
     def __init__(self,base_dir,file_name,names,usecols,case_dir=None,time_dirs=None,tmin=None,tmax=None):
         
+        # Todo: may we can use the routines from residuals and time reader as a generic method in the 
+        # base class? In case no names and usecols are given, we (at least) try to determine based on the 
+        # raw header line.   
+        
         self.mtime = 0
         self.up_to_date = False
         
-        # create and empty reader
+        # create and empty reader  # not sure if this makes sense
         if base_dir is None and file_name is None:
             self.data = pd.DataFrame(columns={'time':[]})
             return
@@ -143,14 +147,17 @@ class OpenFOAMpostProcessing(object):
         
         self.base_dir = Path(self.case_dir,'postProcessing',base_dir)
         
+        # is it really necessary to have the time_dirs as an argument? I think the idea was
+        # to be able to select only specific but not all time dirs when loading the reader.
+        # so far we never used this funtionality.  
         if time_dirs is None:
             self.time_dirs = list_time_dirs(self.base_dir)
         else:
             self.time_dirs = time_dirs
             
-        self.load_data_readers()
+        self.load_data()
 
-    def load_data_readers(self):
+    def load_data(self):
         
         # Todo: do we need to determine time_dirs on each loading call? I think yes
         try:
@@ -164,7 +171,7 @@ class OpenFOAMpostProcessing(object):
     
     def get_data(self):
         
-        self.load_data_readers()
+        self.load_data()
         
         return self.data
     
@@ -367,7 +374,7 @@ def main():
     #r = OpenFOAMtime(base_dir='timeMonitor')
     r = OpenFOAMfieldMinMax(base_dir='minMaxMag')
     print(r.data)
-    r.load_data_readers()
+    r.load_data()
     print(r.data)
 
     if False:    
