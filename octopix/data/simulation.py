@@ -164,7 +164,6 @@ def main():
     for data_type in s.data_types():
         print(s.get_data(data_type))
 
-
     if True:
         import matplotlib.pyplot as plt
         

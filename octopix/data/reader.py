@@ -13,7 +13,10 @@ def makeRuntimeSelectableReader(reader_name,file_name,case_dir):
     
     reader_name = "OpenFOAM{0:}".format(reader_name)
 
-    reader = getattr(sys.modules[__name__],reader_name)(base_dir=file_name,case_dir=case_dir)
+    if reader_name == "OpenFOAMrigidBodyState":
+        reader = getattr(sys.modules[__name__],reader_name)(file_name=file_name,case_dir=case_dir)
+    else:
+        reader = getattr(sys.modules[__name__],reader_name)(base_dir=file_name,case_dir=case_dir)
     
     return reader
 
@@ -235,13 +238,11 @@ class OpenFOAMrigidBodyState(OpenFOAMpostProcessing):
     
     def __init__(self,base_dir='rigidBodyState',file_name='hull.dat',case_dir=None,subtractInitialCoG=True,tmin=None,tmax=None):
         
-        print(base_dir,file_name)
-        
         self.subtractInitialCoG = subtractInitialCoG
 
         names = ['time','x','y','z','roll','pitch','yaw','vx','vy','vz','vroll','vpitch','vyaw','xvcorr','yvcorr','zvcorr']
         
-        super().__init__(base_dir='rigidBodyState',file_name=file_name,names=names,usecols=None,case_dir=case_dir,tmin=tmin,tmax=tmax)
+        super().__init__(base_dir=base_dir,file_name=file_name,names=names,usecols=None,case_dir=case_dir,tmin=tmin,tmax=tmax)
               
         
     def customize(self):
