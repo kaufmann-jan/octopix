@@ -66,10 +66,11 @@ class OpenFOAMpostProcessing(object):
             
         if not time_dirs:
             # no time dirs found, empty case!!!
+            #self.data = pd.DataFrame(columns={'time':[]})
             self.data = pd.DataFrame(columns=self.names)
             return
         
-        current_mtime = np.amax([Path(self.base_dir,td,file_name).stat().st_mtime for td in time_dirs])
+        current_mtime = np.amax([Path(td,file_name).stat().st_mtime for td in time_dirs])
         
         verbose = True
         if current_mtime == self.mtime: # no need to reload
@@ -82,7 +83,7 @@ class OpenFOAMpostProcessing(object):
             tmp_data = []
         
             for td in time_dirs:
-                p = Path(self.base_dir,td,file_name)
+                p = Path(td,file_name)
                 df = parse_of(p,names,usecols)
                 try:
                     tmp_data.append(df.set_index('time'))
@@ -154,12 +155,6 @@ class OpenFOAMpostProcessing(object):
             self.names = names
         
         self.usecols = usecols
-
-        try:
-            self.base_dir = Path(self.case_dir,'postProcessing',base_dir)
-        except TypeError as e:
-            print(e)
-            self.data = pd.DataFrame(columns=names)
         
         self.base_dir = Path(self.case_dir,'postProcessing',base_dir)
                    
@@ -365,8 +360,8 @@ class OpenFOAMfieldMinMax(OpenFOAMpostProcessing):
         self.time_range()
 
 
-def residuals(base_dir='residuals'):
-    return OpenFOAMresiduals(base_dir=base_dir).data
+def residuals(base_dir='residuals',case_dir=None):
+    return OpenFOAMresiduals(base_dir=base_dir,case_dir=case_dir).data
 
 def forces(base_dir='forces',file_name='forces.dat',case_dir=None,tmin=None,tmax=None):
     

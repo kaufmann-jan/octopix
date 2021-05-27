@@ -226,7 +226,7 @@ class Octopix(QMainWindow):
         self.OFscanner.scan(working_dir=self.wDir)
         
         currentFoundItems = self.OFscanner.post_types
-        
+
         currentLoadedItems = [self.datatype_comboBox.itemText(i) for i in range(self.datatype_comboBox.count())]
         
         if not are_equal(currentFoundItems,currentLoadedItems):
@@ -236,44 +236,45 @@ class Octopix(QMainWindow):
         
         if len(self.OFscanner.post_types) == 0:
             self.filelist.clear()
-        
-        try:
-            data_name = self.filelist.currentItem().text()
-        except:
-            data_name = None
-
-        # load the data and provide the dataframe to canvas 
-        # data_type defines the reader
-        reader = makeRuntimeSelectableReader(reader_name=self.data_type,file_name=data_name,case_dir=self.wDir)
-        fields = reader.fields()
-        
-        if self.OFscanner.ppObjects:
-            df = prepare_data(reader.data,self.tmin[self.data_type],self.data_subset)
         else:
-            df = pd.DataFrame()
-
-        self.canvas_layout.mplCanvas.update_plot(df,self.data_type,data_name)
         
-        # if data type has changed, we need to update the list of fields
-        if not are_equal(getAllListItems(self.fieldlist), fields):
-
-            # either apply the previous selection or the default if prev is empty
-            if self.current_field_selection[self.data_type]:
-                fields_to_select = self.current_field_selection[self.data_type]
+            try:
+                data_name = self.filelist.currentItem().text()
+            except:
+                data_name = None
+    
+            # load the data and provide the dataframe to canvas 
+            # data_type defines the reader
+            reader = makeRuntimeSelectableReader(reader_name=self.data_type,file_name=data_name,case_dir=self.wDir)
+            fields = reader.fields()
+            
+            if self.OFscanner.ppObjects:
+                df = prepare_data(reader.data,self.tmin[self.data_type],self.data_subset)
             else:
-                fields_to_select = default_field_selection.get(self.data_type,fields)
-                
-            self.fieldlist.clear() 
-            self.fieldlist.addItems(fields)
-                
-            for i in range(self.fieldlist.count()):
-                list_item = self.fieldlist.item(i) 
-                if list_item.text() in fields_to_select:
-                    list_item.setSelected(True)
-        
-        self.data_subset = getSelectedListItems(self.fieldlist)
-        
-        self.console.update(df)
+                df = pd.DataFrame()
+    
+            self.canvas_layout.mplCanvas.update_plot(df,self.data_type,data_name)
+            
+            # if data type has changed, we need to update the list of fields
+            if not are_equal(getAllListItems(self.fieldlist), fields):
+    
+                # either apply the previous selection or the default if prev is empty
+                if self.current_field_selection[self.data_type]:
+                    fields_to_select = self.current_field_selection[self.data_type]
+                else:
+                    fields_to_select = default_field_selection.get(self.data_type,fields)
+                    
+                self.fieldlist.clear() 
+                self.fieldlist.addItems(fields)
+                    
+                for i in range(self.fieldlist.count()):
+                    list_item = self.fieldlist.item(i) 
+                    if list_item.text() in fields_to_select:
+                        list_item.setSelected(True)
+            
+            self.data_subset = getSelectedListItems(self.fieldlist)
+            
+            self.console.update(df)
         
 
     def on_clicked_openPP(self):
