@@ -25,7 +25,9 @@ class MainWindow(QMainWindow):
         rename_button = QPushButton("Rename")
         rename_button.clicked.connect(self.on_rename)
         up_button = QPushButton("Up")
+        up_button.clicked.connect(self.on_move_up)
         down_button = QPushButton("Down")
+        down_button.clicked.connect(self.on_move_down)
 
         button_vbox = QVBoxLayout()
         button_vbox.addWidget(load_button)
@@ -43,10 +45,10 @@ class MainWindow(QMainWindow):
     
         self.sim_tree.itemChanged[QTreeWidgetItem, int].connect(self.get_item)
         
+        # rename with right click
         self.sim_tree.setContextMenuPolicy(Qt.CustomContextMenu) # ActionsContexdMenu ????       
         self.sim_tree.customContextMenuRequested.connect(self.simTreeCustomContextMenuRequested)
 
-        #rowcount = self.sim_tree.topLevelItemCount()
         
         if True:            
             self.on_load('v 20 kn')
@@ -64,6 +66,27 @@ class MainWindow(QMainWindow):
         # Set the central widget of the Window.
         self.setCentralWidget(sim_groupBox)
 
+    def on_move_up(self):
+                
+        item = self.sim_tree.currentItem()
+        index = self.sim_tree.indexOfTopLevelItem(item)
+    
+        if index > 0:
+            self.sim_tree.takeTopLevelItem(index)
+            self.sim_tree.insertTopLevelItem(index - 1,item)
+            self.sim_tree.setCurrentItem(item)
+    
+    def on_move_down(self):
+
+        item = self.sim_tree.currentItem()
+        index = self.sim_tree.indexOfTopLevelItem(item)
+         
+        if index < self.sim_tree.topLevelItemCount() -1:
+            self.sim_tree.takeTopLevelItem(index)
+            self.sim_tree.insertTopLevelItem(index + 1,item)
+            self.sim_tree.setCurrentItem(item)
+
+
     def on_rename(self):
         
         item = self.sim_tree.currentItem()        
@@ -79,13 +102,14 @@ class MainWindow(QMainWindow):
 
     def on_load(self,name):
 
-        sim = QTreeWidgetItem()
-        sim.setFlags(sim.flags()| Qt.ItemIsUserCheckable)
-        sim.setCheckState(0,Qt.Checked)
-        sim.setText(0,name)
-        sim.setText(1,str(Path(Path.cwd(),name)))
+        item = QTreeWidgetItem()
+        item.setFlags(item.flags()| Qt.ItemIsUserCheckable)
+        item.setCheckState(0,Qt.Checked)
+        item.setText(0,name)
+        item.setText(1,str(Path(Path.cwd(),name)))
         
-        self.sim_tree.addTopLevelItem(sim)
+        self.sim_tree.addTopLevelItem(item)
+        self.sim_tree.setCurrentItem(item)
         
         
     def simTreeCustomContextMenuRequested(self):
