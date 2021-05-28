@@ -67,7 +67,7 @@ class OpenFOAMpostProcessing(object):
         if not time_dirs:
             # no time dirs found, empty case!!!
             #self.data = pd.DataFrame(columns={'time':[]})
-            self.data = pd.DataFrame(columns=self.names)
+            self.data = pd.DataFrame()#columns=self.names)
             return
         
         current_mtime = np.amax([Path(td,file_name).stat().st_mtime for td in time_dirs])
@@ -128,7 +128,7 @@ class OpenFOAMpostProcessing(object):
         
         # create and empty reader  # not sure if this makes sense
         if base_dir is None and file_name is None:
-            self.data = pd.DataFrame(columns={'time':[]})
+            self.data = pd.DataFrame() #columns={'time':[]})
             return
 
         self.base_dir = base_dir
