@@ -150,7 +150,12 @@ class SimulationsBox(QGroupBox):
             
     def on_load(self):
 
-        working_dir = Path(QFileDialog.getExistingDirectory(self, 'Select postProcessing Folder',options=QFileDialog.DontUseNativeDialog)).parent.absolute()
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+        options |= QFileDialog.ShowDirsOnly
+        options |= QFileDialog.ReadOnly
+
+        working_dir = Path(QFileDialog.getExistingDirectory(self, 'Select postProcessing Folder',options=options)).parent.absolute()
 
         print(f'Loading data from: {working_dir}')
         
