@@ -65,7 +65,7 @@ class Simulation(object):
     
     def __init__(self,location=Path.cwd(),name=None):
         
-        self.location = Path(location)
+        self.location = Path(location).absolute()
 
         self.name = name
 
@@ -134,6 +134,7 @@ def main():
     
     s = Simulation()
 
+    print(s.container)
     print(s.data_types())
     print(s.data_files('forces'))
     
