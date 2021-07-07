@@ -73,7 +73,8 @@ def find_all_OF_ppObjects(supported_types,working_dir=Path.cwd()):
     # postProcessing/<userDefinedOutputName>/0/<functionObjectType>.dat
         
     if 'rigidBodyState' in get_pdirs(working_dir):
-        ppObjects['rigidBodyState'] = find_dat_files(list_time_dirs(Path(working_dir,'postProcessing','rigidBodyState')))
+        dat_files = find_dat_files(list_time_dirs(Path(working_dir,'postProcessing','rigidBodyState')))
+        ppObjects['rigidBodyState'] = list(set(dat_files))
     
     #ppObjects = {k:sorted(v,reverse=True) for (k,v) in ppObjects.items()}
     # for sorting we replace the underscore with the bracket, as the bracket is at the end of the sorting order
