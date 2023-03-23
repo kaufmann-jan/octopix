@@ -19,24 +19,12 @@ In order to run with
 python -m octopix
 ```
 
-we need to add octopix to the PYTHONPATH. One possibility is to add to the site-packages of the virtualenv.
-For this we need to create a .pth file within the virtualenv's lib dir: 
-
-`path/to/virtualenv/lib/python3.8/site-packages/`
-
-e.g.
-
-`/home/jan/virtualenvs/gui/lib/python3.8/site-packages/octopix.pth`
-
-with the absolute path to the octopix package
-
-`/path/to/octopix`
-
-e.g.
-
-`/home/jan/workspace/octopix`
-
-
+```bash
+python3 -m venv --prompt octopix .venv
+source .ven/bin/activate
+pip3 install --upgrade pip setuptools
+pip3 install -r requirements.txt
+```
 
 ## Contribution
 

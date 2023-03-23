@@ -1,7 +1,38 @@
+# temporary files
 *.swp
 *.tmp
 *.bak
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Eclipse project settings
 .project
 .pydevproject
-.settings/
-__pycache__/
+.settings
+
+# Distribution / packaging
+bin/
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+__pycache__
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
