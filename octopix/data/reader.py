@@ -359,6 +359,25 @@ class OpenFOAMfieldMinMax(OpenFOAMpostProcessing):
         
         self.time_range()
 
+class OpenFOAMactuatorDiskLog(OpenFOAMpostProcessing):
+    
+    def __init__(self,base_dir='actuatorDisk',file_name='actuatorDiskLog.dat',case_dir=None,tmin=None,tmax=None):
+
+        names = ['time','thrust','torque','vp','va','n','J','FD','alphacorrThrust','alphacorrTorque','fillgrade']
+        usecols = ['time','thrust','torque','vp','va','n','J','FD','alphacorrThrust','alphacorrTorque','fillgrade']
+        try:
+            super().__init__(base_dir=base_dir, file_name=file_name, names=names, usecols=usecols, case_dir=case_dir,tmin=tmin,tmax=tmax)
+        except ParserError:
+            names = ['time','thrust','torque','vp','va','n','FD']
+            usecols = ['time','thrust','torque','vp','va','n','FD']
+            
+            super().__init__(base_dir=base_dir, file_name=file_name, names=names, usecols=usecols, case_dir=case_dir,tmin=tmin,tmax=tmax)
+        
+    def customize(self):
+        OpenFOAMpostProcessing.customize(self)
+
+        self.time_range()
+
 
 def residuals(base_dir='residuals',case_dir=None):
     return OpenFOAMresiduals(base_dir=base_dir,case_dir=case_dir).data
