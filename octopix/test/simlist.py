@@ -13,6 +13,9 @@ from octopix.data.simulation import Simulation
 
 class Simulations(list):
     
+    def __init__(self):
+        super(Simulations,self).__init__()
+    
     def locations(self):
         return [sim.location for sim in self]
 

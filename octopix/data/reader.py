@@ -359,9 +359,9 @@ class OpenFOAMfieldMinMax(OpenFOAMpostProcessing):
         
         self.time_range()
 
-class OpenFOAMactuatorDiskLog(OpenFOAMpostProcessing):
+class OpenFOAMactuatorDisk(OpenFOAMpostProcessing):
     
-    def __init__(self,base_dir='actuatorDisk',file_name='actuatorDiskLog.dat',case_dir=None,tmin=None,tmax=None):
+    def __init__(self,base_dir='actuatorDisk',file_name='actuatorDisk.dat',case_dir=None,tmin=None,tmax=None):
 
         names = ['time','thrust','torque','vp','va','n','J','FD','alphacorrThrust','alphacorrTorque','fillgrade']
         usecols = ['time','thrust','torque','vp','va','n','J','FD','alphacorrThrust','alphacorrTorque','fillgrade']

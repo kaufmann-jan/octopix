@@ -9,9 +9,9 @@ from distutils import util
 from pathlib import Path
 import os
 
-supported_post_types = ['residuals','forces','rigidBodyState','time','fieldMinMax','actuatorDiskLog']
+supported_post_types = ['residuals','forces','rigidBodyState','time','fieldMinMax','actuatorDisk']
 
-default_field_selection = {'forces':['fx'],'rigidBodyState':['z','pitch'],'time':['cpu/step','clock/step'],'actuatorDiskLog':['thrust']}
+default_field_selection = {'forces':['fx'],'rigidBodyState':['z','pitch'],'time':['cpu/step','clock/step'],'actuatorDisk':['thrust']}
 
 rgb_colors = {}
 rgb_colors['lightgrey'] = 'rgb(211,211,211)'
