@@ -46,7 +46,7 @@ def parse_of(file_name,names,usecols=None):
     with path.open('r') as f:
         fstream = StringIO(f.read().translate(trantab))
     
-    df = pd.read_csv(fstream,sep='\s+',header=None,names=names,comment='#',usecols=usecols)
+    df = pd.read_csv(fstream,sep=r'\s+',header=None,names=names,comment='#',usecols=usecols)
 
     return df
 
