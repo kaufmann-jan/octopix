@@ -9,11 +9,12 @@ import pandas as pd
 from octopix.show.console import Console
 from octopix.show.canvas import CanvasLayout
 from octopix.data.scanner import OFppScanner
-from octopost.reader import makeRuntimeSelectableReader
-from octopix.data.funcs import prepare_data
 from octopix.data.funcs import getAllListItems,getSelectedListItems,are_equal
 from octopix.common.config import supported_post_types,default_field_selection
 from octopix.common.config import OctopixConfigurator
+
+from octopost.reader import makeRuntimeSelectableReader
+from octopost.parsing import filter_time_and_columns
 
 from PyQt5.QtCore import pyqtSlot,QTimer,Qt
 from PyQt5.QtGui import QDoubleValidator,QIcon,QPixmap
@@ -250,7 +251,11 @@ class Octopix(QMainWindow):
             fields = reader.fields()
             
             if self.OFscanner.ppObjects:
-                df = prepare_data(reader.data,self.tmin[self.data_type],self.data_subset)
+                df = filter_time_and_columns(
+                    df=reader.data,
+                    time_start=self.tmin[self.data_type],
+                    data_subset=self.data_subset
+                    )
             else:
                 df = pd.DataFrame()
     
