@@ -6,7 +6,7 @@ from pathlib import Path
 
 from octopix.common.config import supported_post_types
 from octopix.data.scanner import find_all_OF_ppObjects
-from octopix.data.reader import makeRuntimeSelectableReader
+from octopost.reader import makeRuntimeSelectableReader
 
 
 class Simulation(object):
@@ -94,7 +94,7 @@ class Simulation(object):
                 
             for data_file in data_dict[data_type]:
                 if self.container[data_type][data_file] is None: 
-                    reader = makeRuntimeSelectableReader(reader_name=data_type, file_name=data_file, case_dir=self.location)
+                    reader = makeRuntimeSelectableReader(reader_name=data_type, base_dir=data_file, case_dir=self.location)
                     self.container[data_type][data_file] = reader
 
 

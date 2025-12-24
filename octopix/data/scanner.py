@@ -4,7 +4,7 @@
 from pathlib import Path
 
 from octopix.data.funcs import flatten,is_unique
-from octopix.data.reader import list_time_dirs
+from octopost.parsing import list_time_dirs
 from octopix.common.config import supported_post_types
 
 def get_pdirs(working_dir=Path.cwd()):

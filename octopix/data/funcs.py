@@ -20,3 +20,18 @@ def getAllListItems(qlist):
 
 def getSelectedListItems(qlist):
     return [ x.text() for x in qlist.selectedItems() ]
+
+
+def prepare_data(df, time_start=0.0, data_subset=None):
+    if data_subset is None:
+        data_subset = []
+
+    if time_start > 0.0:
+        df = df.loc[df.time >= time_start]
+
+    df.set_index('time', drop=True, inplace=True)
+
+    if len(data_subset) > 0:
+        df = df[df.columns.intersection(data_subset)]
+
+    return df

@@ -9,7 +9,8 @@ import pandas as pd
 from octopix.show.console import Console
 from octopix.show.canvas import CanvasLayout
 from octopix.data.scanner import OFppScanner
-from octopix.data.reader import makeRuntimeSelectableReader,prepare_data
+from octopost.reader import makeRuntimeSelectableReader
+from octopix.data.funcs import prepare_data
 from octopix.data.funcs import getAllListItems,getSelectedListItems,are_equal
 from octopix.common.config import supported_post_types,default_field_selection
 from octopix.common.config import OctopixConfigurator
@@ -245,7 +246,7 @@ class Octopix(QMainWindow):
     
             # load the data and provide the dataframe to canvas 
             # data_type defines the reader
-            reader = makeRuntimeSelectableReader(reader_name=self.data_type,file_name=data_name,case_dir=self.wDir)
+            reader = makeRuntimeSelectableReader(reader_name=self.data_type, base_dir=data_name, case_dir=self.wDir)
             fields = reader.fields()
             
             if self.OFscanner.ppObjects:
@@ -361,6 +362,3 @@ def run():
 
 if __name__ == '__main__':
     run()
-
-
-

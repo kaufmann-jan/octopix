@@ -1,4 +1,0 @@
-pandas
-PyQt5
-matplotlib
--e .
