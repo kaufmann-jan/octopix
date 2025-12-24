@@ -3,11 +3,24 @@ octopix is a small, lightweight GUI for showing / plotting (mainly) OpenFOAM tim
 
 ## Installation
 
-Set up a local virtual environment and install from the repo. This keeps the
-PyQt5 dependency isolated and ensures the bundled `octopost` dependency is
-pulled from GitHub.
+You can install directly from the repo URL, or use an editable install for
+development. Either way, it is recommended to use a virtual environment because
+of the Qt and `octopost` dependencies.
+
+Install from the repo URL:
 
 ```bash
+python3 -m venv --prompt octopix .venv
+source .venv/bin/activate
+pip install --upgrade pip setuptools
+pip install "octopix @ git+https://github.com/kaufmann-jan/octopix@main"
+```
+
+For development (clone + editable install):
+
+```bash
+git clone https://github.com/kaufmann-jan/octopix.git
+cd octopix
 python3 -m venv --prompt octopix .venv
 source .venv/bin/activate
 pip install --upgrade pip setuptools
@@ -29,6 +42,13 @@ Run the app from the project root:
 python -m octopix
 ```
 
+The `octopix` script is installed via the `project.scripts` entry, so you can also run it
+as long as your virtual environment is active:
+
+```bash
+octopix
+```
+
 ## Contribution
 
 Contributions are welcome! This is a private project, therefore time is the most limiting resource... :children_crossing: If you open an issue, please include reproduction steps and environment details; for pull requests, include a short rationale and any relevant screenshots.
@@ -36,4 +56,3 @@ Contributions are welcome! This is a private project, therefore time is the most
 ## License
 
 [GNU General Public License v3.0](https://github.com/kaufmann-jan/octopix/blob/main/LICENSE)
-
