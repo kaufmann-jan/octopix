@@ -3,35 +3,37 @@ octopix is a small, lightweight GUI for showing / plotting (mainly) OpenFOAM tim
 
 ## Installation
 
-tbd. Maybe sometimes in the future we can do something like
+Set up a local virtual environment and install from the repo. This keeps the
+PyQt5 dependency isolated and ensures the bundled `octopost` dependency is
+pulled from GitHub.
 
 ```bash
-pip install octopix
+python3 -m venv --prompt octopix .venv
+source .venv/bin/activate
+pip install --upgrade pip setuptools
+pip install -e .
 ```
 
 ## Usage
 
-`pyrcc5 -o resources.py resources.qrc`
+If you change the Qt resource file (`octopix/resources/resources.qrc`) or add
+new assets, regenerate the compiled resources module:
 
-In order to run with
- 
+```bash
+pyrcc5 -o octopix/resources/resources.py octopix/resources/resources.qrc
+```
+
+Run the app from the project root:
+
 ```bash
 python -m octopix
 ```
 
-```bash
-python3 -m venv --prompt octopix .venv
-source .ven/bin/activate
-pip3 install --upgrade pip setuptools
-pip3 install -r requirements.txt
-```
-
 ## Contribution
 
-Contributions are welcome! This is a private project, therefore time is the most limiting resource... :children_crossing:
+Contributions are welcome! This is a private project, therefore time is the most limiting resource... :children_crossing: If you open an issue, please include reproduction steps and environment details; for pull requests, include a short rationale and any relevant screenshots.
 
 ## License
 
 [GNU General Public License v3.0](https://github.com/kaufmann-jan/octopix/blob/main/LICENSE)
-
 
