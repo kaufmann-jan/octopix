@@ -201,11 +201,11 @@ class Octopix(QMainWindow):
         self.update()
         
         if self.config.getboolean('appearance','dark_mode'):
-            self.setStyleSheet("background-color:rgb(130, 138, 140);")
-            self.console.output_text_field.setStyleSheet("background-color:rgb(139, 146, 148);")
-            self.console.statistics_text_field.setStyleSheet("background-color:rgb(139, 146, 148);")
-            self.filelist.setStyleSheet("background-color:rgb(139, 146, 148);")
-            self.fieldlist.setStyleSheet("background-color:rgb(139, 146, 148);")
+            self.setStyleSheet("background-color:rgb(40, 40, 40); color:#F0F0F0;")
+            self.console.output_text_field.setStyleSheet("background-color:rgb(55, 55, 55); color:#F0F0F0;")
+            self.console.set_dark_mode()
+            self.filelist.setStyleSheet("background-color:rgb(55, 55, 55); color:#F0F0F0;")
+            self.fieldlist.setStyleSheet("background-color:rgb(55, 55, 55); color:#F0F0F0;")
         
         self.initMenubar()
         

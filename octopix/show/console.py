@@ -198,6 +198,13 @@ class Console(QTabWidget):
         self.view.update(data)
 
 
+    def set_dark_mode(self):
+        self.view.setStyleSheet(
+            "QTableView { background-color: rgb(55,55,55); color: #F0F0F0; gridline-color: rgb(90,90,90); }"
+            "QHeaderView::section { background-color: rgb(30,30,30); color: #F0F0F0; }"
+        )
+
+
     def on_click_saveButton(self):
         
         fileName, fileType = QFileDialog.getSaveFileName(self,"Saving the data","","CSV Files (*.csv);;Text Files (*.txt);;All Files (*)"

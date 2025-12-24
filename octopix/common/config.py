@@ -42,9 +42,15 @@ def getBool(s):
 
 class OctopixConfigurator(ConfigParser):
     
+    def _configPath(self):
+        return Path(Path.home() / ".config" / "octopix" / "octopix.ini")
+
+    def _legacyConfigPath(self):
+        return Path(Path.home() / ".config" / "ocotpix" / "octopix.ini")
+
     def _writeConfigFile(self):
         
-        path = Path(Path.home()/".config/ocotpix")  # to cfg_data
+        path = Path(Path.home() / ".config" / "octopix")  # to cfg_data
         os.makedirs(path, exist_ok=True)
         
         with open(Path(path/'octopix.ini'), 'w') as configfile:
@@ -54,6 +60,12 @@ class OctopixConfigurator(ConfigParser):
         
         super(OctopixConfigurator,self).__init__(*args, **kwargs)
         self.read_dict(cfg_data)
+        config_path = self._configPath()
+        legacy_path = self._legacyConfigPath()
+        if config_path.exists():
+            self.read(config_path)
+        elif legacy_path.exists():
+            self.read(legacy_path)
 
 
 def main():
