@@ -93,6 +93,7 @@ class Octopix(QMainWindow):
         self.wDir = Path.cwd()
         self.data_type = None
         self.data_subset = []
+        self.show_all = False
         
         self.OFscanner = OFppScanner(supported_types=supported_post_types, working_dir=self.wDir)
         
@@ -162,6 +163,10 @@ class Octopix(QMainWindow):
         auto_update_checkBox = QCheckBox("Autoupdate",self)
         auto_update_checkBox.setChecked(self.config.getboolean('autoupdate','active_on_start'))
         auto_update_checkBox.stateChanged.connect(self.on_auto_update_clicked)
+
+        show_all_checkBox = QCheckBox("Show All", self)
+        show_all_checkBox.setChecked(False)
+        show_all_checkBox.stateChanged.connect(self.on_show_all_clicked)
         
         autoupdate_interval = QLineEdit()
         autoupdate_interval.setMaximumWidth(100)
@@ -178,6 +183,7 @@ class Octopix(QMainWindow):
         gb.setCheckable(False)
         gb.layout = QVBoxLayout()
         gb.layout.addWidget(auto_update_checkBox)
+        gb.layout.addWidget(show_all_checkBox)
         gb.layout.addWidget(QLabel("Interval:"))
         gb.layout.addWidget(autoupdate_interval)
         gb.layout.addWidget(reload_button)
@@ -282,10 +288,20 @@ class Octopix(QMainWindow):
                     time_end=self.tmax[self.data_type],
                     data_subset=self.data_subset
                     )
+                if self.show_all and (self.tmin[self.data_type] is not None or self.tmax[self.data_type] is not None):
+                    df_full = filter_time_and_columns(
+                        df=reader.data,
+                        time_start=None,
+                        time_end=None,
+                        data_subset=self.data_subset
+                    )
+                else:
+                    df_full = None
             else:
                 df = pd.DataFrame()
+                df_full = None
     
-            self.canvas_layout.mplCanvas.update_plot(df,self.data_type,data_name)
+            self.canvas_layout.mplCanvas.update_plot(df, self.data_type, data_name, full_data=df_full)
             
             # if data type has changed, we need to update the list of fields
             if not are_equal(getAllListItems(self.fieldlist), fields):
@@ -336,6 +352,15 @@ class Octopix(QMainWindow):
             self.timer.stop()
         else:
             raise TypeError
+
+    def on_show_all_clicked(self, state):
+        if state == Qt.Checked or state:
+            self.show_all = True
+        elif state == Qt.Unchecked or not state:
+            self.show_all = False
+        else:
+            raise TypeError
+        self.update()
     
 
     @pyqtSlot()

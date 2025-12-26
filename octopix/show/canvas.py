@@ -35,9 +35,11 @@ class MplCanvas(FigureCanvasQTAgg):
        
         self.data = pd.DataFrame()
         self._plot_refs = None
+        self._plot_refs_full = None
         self.current_data_type = None
         self.current_data_file = None
         self.fields = None
+        self.show_all = False
         self.style = settings.get('style','classic')
 
                 
@@ -88,28 +90,59 @@ class MplCanvas(FigureCanvasQTAgg):
         props = dict(boxstyle='round', facecolor=np.array([163, 130, 38])/255., alpha=0.5)
         self.axes.text(0.45, 0.55, textstr, transform=self.axes.transAxes, fontsize=10,verticalalignment='top', bbox=props)
         self._plot_refs = None
+        self._plot_refs_full = None
+        self.show_all = False
  
  
-    def update_plot(self,data,data_type,data_file):
+    def update_plot(self, data, data_type, data_file, full_data=None):
         """(Re)Loads the data with self.load_data() and 
         draws the plot. If called for the first time, the 
         axis is created, otherwise the reference to the axis
         is updated.
         """
         self.df = data
+        self.full_df = full_data
         
-        if self.df.empty:
+        show_all = self.full_df is not None and not self.full_df.empty
+
+        if self.df.empty and not show_all:
             self.clear()
         else:
-            if self._plot_refs is None or self.current_data_type != data_type or not are_equal(self.fields,self.df.columns):
+            if (
+                self._plot_refs is None
+                or self.current_data_type != data_type
+                or not are_equal(self.fields, (self.df.columns if not self.df.empty else self.full_df.columns))
+                or self.show_all != show_all
+            ):
                 
                 self.current_data_type = data_type
                 self.current_data_file = data_file
-                self.fields = self.df.columns
+                self.fields = self.df.columns if not self.df.empty else self.full_df.columns
+                self.show_all = show_all
                 
                 self.axes.cla()
                                 
-                plot_refs = [ self.axes.plot(self.df.index,self.df[col],label=col)[0] for col in list(self.df)]
+                if show_all:
+                    plot_refs_full = [
+                        self.axes.plot(
+                            self.full_df.index,
+                            self.full_df[col],
+                            color="lightgray",
+                            linewidth=1.0,
+                            label="_full",
+                        )[0]
+                        for col in list(self.full_df)
+                    ]
+                else:
+                    plot_refs_full = None
+
+                if not self.df.empty:
+                    plot_refs = [
+                        self.axes.plot(self.df.index, self.df[col], label=col)[0]
+                        for col in list(self.df)
+                    ]
+                else:
+                    plot_refs = []
                 
                 if data_type == 'residuals':
                     self.axes.set_ylabel('Residuals [-]')    
@@ -127,11 +160,16 @@ class MplCanvas(FigureCanvasQTAgg):
                 legend.set_draggable(True)
     
                 self._plot_refs = plot_refs
+                self._plot_refs_full = plot_refs_full
                 
             else:
                
                 for i,col in enumerate(list(self.df)):
-                    self._plot_refs[i].set_data(self.df.index,self.df[col])
+                    self._plot_refs[i].set_data(self.df.index, self.df[col])
+
+                if self._plot_refs_full is not None:
+                    for i,col in enumerate(list(self.full_df)):
+                        self._plot_refs_full[i].set_data(self.full_df.index, self.full_df[col])
     
                 self.axes.relim()
                 self.axes.autoscale_view()
