@@ -36,10 +36,12 @@ class MplCanvas(FigureCanvasQTAgg):
         self.data = pd.DataFrame()
         self._plot_refs = None
         self._plot_refs_full = None
+        self._mean_refs = None
         self.current_data_type = None
         self.current_data_file = None
         self.fields = None
         self.show_all = False
+        self.show_mean = False
         self.style = settings.get('style','classic')
         self._base_figsize = (width, height)
 
@@ -113,10 +115,12 @@ class MplCanvas(FigureCanvasQTAgg):
         self.axes.text(0.45, 0.55, textstr, transform=self.axes.transAxes, fontsize=10,verticalalignment='top', bbox=props)
         self._plot_refs = None
         self._plot_refs_full = None
+        self._mean_refs = None
         self.show_all = False
+        self.show_mean = False
  
  
-    def update_plot(self, data, data_type, data_file, full_data=None):
+    def update_plot(self, data, data_type, data_file, full_data=None, mean_values=None):
         """(Re)Loads the data with self.load_data() and 
         draws the plot. If called for the first time, the 
         axis is created, otherwise the reference to the axis
@@ -124,8 +128,10 @@ class MplCanvas(FigureCanvasQTAgg):
         """
         self.df = data
         self.full_df = full_data
+        self.mean_values = mean_values
         
         show_all = self.full_df is not None and not self.full_df.empty
+        show_mean = self.mean_values is not None and not self.mean_values.empty
 
         if self.df.empty and not show_all:
             self.clear()
@@ -135,12 +141,14 @@ class MplCanvas(FigureCanvasQTAgg):
                 or self.current_data_type != data_type
                 or not are_equal(self.fields, (self.df.columns if not self.df.empty else self.full_df.columns))
                 or self.show_all != show_all
+                or self.show_mean != show_mean
             ):
                 
                 self.current_data_type = data_type
                 self.current_data_file = data_file
                 self.fields = self.df.columns if not self.df.empty else self.full_df.columns
                 self.show_all = show_all
+                self.show_mean = show_mean
                 
                 self.axes.cla()
                                 
@@ -165,6 +173,24 @@ class MplCanvas(FigureCanvasQTAgg):
                     ]
                 else:
                     plot_refs = []
+
+                if show_mean and plot_refs:
+                    mean_refs = []
+                    for i, col in enumerate(list(self.df)):
+                        mean_val = self.mean_values.get(col)
+                        if mean_val is None:
+                            continue
+                        color = plot_refs[i].get_color()
+                        mean_line = self.axes.axhline(
+                            mean_val,
+                            color=color,
+                            linestyle="--",
+                            linewidth=1.0,
+                            label="_mean",
+                        )
+                        mean_refs.append(mean_line)
+                else:
+                    mean_refs = None
                 
                 if data_type == 'residuals':
                     self.axes.set_ylabel('Residuals [-]')    
@@ -183,6 +209,7 @@ class MplCanvas(FigureCanvasQTAgg):
     
                 self._plot_refs = plot_refs
                 self._plot_refs_full = plot_refs_full
+                self._mean_refs = mean_refs
                 
             else:
                
@@ -192,6 +219,13 @@ class MplCanvas(FigureCanvasQTAgg):
                 if self._plot_refs_full is not None:
                     for i,col in enumerate(list(self.full_df)):
                         self._plot_refs_full[i].set_data(self.full_df.index, self.full_df[col])
+
+                if self._mean_refs is not None:
+                    for i, col in enumerate(list(self.df)):
+                        mean_val = self.mean_values.get(col)
+                        if mean_val is None:
+                            continue
+                        self._mean_refs[i].set_ydata([mean_val, mean_val])
     
                 self.axes.relim()
                 self.axes.autoscale_view()

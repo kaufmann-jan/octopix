@@ -94,6 +94,7 @@ class Octopix(QMainWindow):
         self.data_type = None
         self.data_subset = []
         self.show_all = False
+        self.show_mean = False
         
         self.OFscanner = OFppScanner(supported_types=supported_post_types, working_dir=self.wDir)
         
@@ -167,7 +168,11 @@ class Octopix(QMainWindow):
         show_all_checkBox = QCheckBox("Show All", self)
         show_all_checkBox.setChecked(False)
         show_all_checkBox.stateChanged.connect(self.on_show_all_clicked)
-        
+
+        show_mean_checkBox = QCheckBox("Show Mean", self)
+        show_mean_checkBox.setChecked(False)
+        show_mean_checkBox.stateChanged.connect(self.on_show_mean_clicked)
+
         autoupdate_interval = QLineEdit()
         autoupdate_interval.setMaximumWidth(100)
         autoupdate_interval.setValidator(QDoubleValidator(0.1,1000.,2))
@@ -184,6 +189,7 @@ class Octopix(QMainWindow):
         gb.layout = QVBoxLayout()
         gb.layout.addWidget(auto_update_checkBox)
         gb.layout.addWidget(show_all_checkBox)
+        gb.layout.addWidget(show_mean_checkBox)
         gb.layout.addWidget(QLabel("Interval:"))
         gb.layout.addWidget(autoupdate_interval)
         gb.layout.addWidget(reload_button)
@@ -297,11 +303,22 @@ class Octopix(QMainWindow):
                     )
                 else:
                     df_full = None
+                if self.show_mean and not df.empty:
+                    mean_values = df.mean()
+                else:
+                    mean_values = None
             else:
                 df = pd.DataFrame()
                 df_full = None
+                mean_values = None
     
-            self.canvas_layout.mplCanvas.update_plot(df, self.data_type, data_name, full_data=df_full)
+            self.canvas_layout.mplCanvas.update_plot(
+                df,
+                self.data_type,
+                data_name,
+                full_data=df_full,
+                mean_values=mean_values,
+            )
             
             # if data type has changed, we need to update the list of fields
             if not are_equal(getAllListItems(self.fieldlist), fields):
@@ -358,6 +375,15 @@ class Octopix(QMainWindow):
             self.show_all = True
         elif state == Qt.Unchecked or not state:
             self.show_all = False
+        else:
+            raise TypeError
+        self.update()
+
+    def on_show_mean_clicked(self, state):
+        if state == Qt.Checked or state:
+            self.show_mean = True
+        elif state == Qt.Unchecked or not state:
+            self.show_mean = False
         else:
             raise TypeError
         self.update()
