@@ -98,11 +98,17 @@ class Octopix(QMainWindow):
         
         self.current_field_selection = {k:[] for k in supported_post_types}
         self.tmin = {k:0.0 for k in supported_post_types}
+        self.tmax = {k:None for k in supported_post_types}
         
         self.tmin_textfield = QLineEdit()
         self.tmin_textfield.setMaximumWidth(100)
         self.tmin_textfield.setValidator(QDoubleValidator())
         self.tmin_textfield.textEdited.connect(self.on_read_eval_start_time)
+
+        self.tmax_textfield = QLineEdit()
+        self.tmax_textfield.setMaximumWidth(100)
+        self.tmax_textfield.setValidator(QDoubleValidator())
+        self.tmax_textfield.textEdited.connect(self.on_read_eval_end_time)
 
         self.datatype_comboBox = QComboBox()
         self.datatype_comboBox.setMaximumWidth(120)
@@ -138,8 +144,12 @@ class Octopix(QMainWindow):
         dataBox.layout.addWidget(self.filelist)
         dataBox.layout.addWidget(QLabel('Fields:'))
         dataBox.layout.addWidget(self.fieldlist)
-        dataBox.layout.addWidget(QLabel("Tmin:"))
-        dataBox.layout.addWidget(self.tmin_textfield)
+        tbox = QHBoxLayout()
+        tbox.addWidget(QLabel("Tmin:"))
+        tbox.addWidget(self.tmin_textfield)
+        tbox.addWidget(QLabel("Tmax:"))
+        tbox.addWidget(self.tmax_textfield)
+        dataBox.layout.addLayout(tbox)
         dataBox.setLayout(dataBox.layout)        
 
         # the tabs        
@@ -201,11 +211,26 @@ class Octopix(QMainWindow):
         self.update()
         
         if self.config.getboolean('appearance','dark_mode'):
-            self.setStyleSheet("background-color:rgb(40, 40, 40); color:#F0F0F0;")
+            self.setStyleSheet(
+                "background-color:rgb(40, 40, 40); color:#F0F0F0;"
+                "QLabel { color:#D8D8D8; }"
+                "QGroupBox { border:1px solid rgb(70,70,70); margin-top:10px; color:#F0F0F0; }"
+                "QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top left; padding:0 4px; background:rgb(30,30,30); }"
+                "QLineEdit { selection-background-color:#A8E10C; selection-color:#333333; }"
+                "QListWidget { selection-background-color:#A8E10C; selection-color:#333333; }"
+                "QTableView { selection-background-color:#A8E10C; selection-color:#333333; }"
+                "QHeaderView::section { background-color:rgb(30,30,30); color:#F0F0F0; }"
+                "QMenuBar { background-color:rgb(40,40,40); color:#F0F0F0; }"
+                "QMenuBar::item:selected { background-color:#A8E10C; color:#333333; }"
+                "QMenu { background-color:rgb(40,40,40); color:#F0F0F0; }"
+                "QMenu::item:selected { background-color:#A8E10C; color:#333333; }"
+            )
             self.console.output_text_field.setStyleSheet("background-color:rgb(55, 55, 55); color:#F0F0F0;")
             self.console.set_dark_mode()
             self.filelist.setStyleSheet("background-color:rgb(55, 55, 55); color:#F0F0F0;")
             self.fieldlist.setStyleSheet("background-color:rgb(55, 55, 55); color:#F0F0F0;")
+            self.tmin_textfield.setStyleSheet("background-color:rgb(55, 55, 55); color:#F0F0F0;")
+            self.tmax_textfield.setStyleSheet("background-color:rgb(55, 55, 55); color:#F0F0F0;")
         
         self.initMenubar()
         
@@ -254,6 +279,7 @@ class Octopix(QMainWindow):
                 df = filter_time_and_columns(
                     df=reader.data,
                     time_start=self.tmin[self.data_type],
+                    time_end=self.tmax[self.data_type],
                     data_subset=self.data_subset
                     )
             else:
@@ -326,6 +352,18 @@ class Octopix(QMainWindow):
             self.console.sendToOutput('ups')
         
         self.update()
+
+    def on_read_eval_end_time(self,text):
+        if text == "":
+            self.tmax[self.data_type] = None
+        else:
+            try:
+                self.tmax[self.data_type] = float(text)
+            except:
+                self.console.sendToOutput('ups')
+                return
+        
+        self.update()
     
     def on_read_autoupdate_interval(self,text):
         try:
@@ -343,6 +381,10 @@ class Octopix(QMainWindow):
             self.filelist.setCurrentRow(0)
             
             self.tmin_textfield.setText("{:g}".format(self.tmin[self.data_type]))
+            if self.tmax[self.data_type] is None:
+                self.tmax_textfield.setText("")
+            else:
+                self.tmax_textfield.setText("{:g}".format(self.tmax[self.data_type]))
                    
             self.update()
             
