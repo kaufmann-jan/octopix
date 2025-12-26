@@ -41,6 +41,28 @@ class MplCanvas(FigureCanvasQTAgg):
         self.fields = None
         self.show_all = False
         self.style = settings.get('style','classic')
+        self._base_figsize = (width, height)
+
+    def resizeEvent(self, event):
+        super(MplCanvas, self).resizeEvent(event)
+        self._update_font_sizes()
+        self.draw_idle()
+
+    def _font_size(self):
+        width, height = self.fig.get_size_inches()
+        base_w, base_h = self._base_figsize
+        scale = min(width / base_w, height / base_h)
+        return max(6, int(8 * scale))
+
+    def _update_font_sizes(self):
+        size = self._font_size()
+        self.axes.xaxis.label.set_size(size + 1)
+        self.axes.yaxis.label.set_size(size + 1)
+        self.axes.tick_params(labelsize=size)
+        legend = self.axes.get_legend()
+        if legend is not None:
+            for text in legend.get_texts():
+                text.set_fontsize(size)
 
                 
     def setPlotStyle(self):
@@ -175,6 +197,7 @@ class MplCanvas(FigureCanvasQTAgg):
                 self.axes.autoscale_view()
 
         self.setPlotStyle()
+        self._update_font_sizes()
         self.draw()
 
             
