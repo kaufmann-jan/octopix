@@ -3,8 +3,7 @@
 
 from configparser import ConfigParser
 
-#import distutils
-from distutils import util
+# distutils is deprecated in Python 3.12; use a local strtobool replacement.
 
 from pathlib import Path
 import os
@@ -38,7 +37,12 @@ cfg_data = {
 }
 
 def getBool(s):
-    return bool(util.strtobool(s))
+    val = str(s).strip().lower()
+    if val in ("y", "yes", "t", "true", "on", "1"):
+        return True
+    if val in ("n", "no", "f", "false", "off", "0"):
+        return False
+    raise ValueError("invalid truth value {0:}".format(s))
 
 class OctopixConfigurator(ConfigParser):
     
