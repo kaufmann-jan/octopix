@@ -53,16 +53,24 @@ def find_all_OF_ppObjects(supported_types,working_dir=Path.cwd()):
      
     """
     ppObjects = {k:[] for k in supported_types}
-    
+        
     for val in get_pdirs(working_dir=working_dir):
         dat_files = find_dat_files(list_time_dirs(Path(working_dir,'postProcessing',val)))
-        
+                
         if dat_files and is_unique(dat_files):
+             
+            pOname = Path(dat_files[0]).stem
+            
+            if pOname == 'rigidBodySectionalForceProbes':
+                pOname = 'sectionalForces'
+            
             try:
-                ppObjects[Path(dat_files[0]).stem].append(val)
+                
+                ppObjects[pOname].append(val)
+                
             except: #??? not nice
-                pass
-      
+                pass 
+    
     ppObjects = {k:v for (k,v) in ppObjects.items() if len(v) > 0}
 
     # special handling of rigidBodyState, as the rigidBodyState function object
@@ -71,6 +79,11 @@ def find_all_OF_ppObjects(supported_types,working_dir=Path.cwd()):
     # This is in oposite to the logic of all other (at least to my current knowledge)
     # function objects, which are writing to
     # postProcessing/<userDefinedOutputName>/0/<functionObjectType>.dat
+    
+    # The sectionalForces function object has another special behavior, as it writes to 
+    # postProcessing/<userDefinedOutputName>/0/rigidBodySectionalForceProbes.dat , i.e.
+    # the file name does not contain the function object type, but instead the rigidBodySectionalForceProbes.
+    
         
     if 'rigidBodyState' in get_pdirs(working_dir):
         dat_files = find_dat_files(list_time_dirs(Path(working_dir,'postProcessing','rigidBodyState')))

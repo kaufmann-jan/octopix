@@ -8,9 +8,9 @@ from configparser import ConfigParser
 from pathlib import Path
 import os
 
-supported_post_types = ['residuals','forces','rigidBodyState','time','fieldMinMax','actuatorDisk']
+supported_post_types = ['residuals','forces','rigidBodyState','time','fieldMinMax','actuatorDisk','sectionalForces']
 
-default_field_selection = {'forces':['fx'],'rigidBodyState':['z','pitch'],'time':['cpu/step','clock/step'],'actuatorDisk':['thrust']}
+default_field_selection = {'forces':['fx'],'rigidBodyState':['z','pitch'],'time':['cpu/step','clock/step'],'actuatorDisk':['thrust'],'sectionalForces':['S0 Total Force x']}
 
 rgb_colors = {}
 rgb_colors['lightgrey'] = 'rgb(211,211,211)'
